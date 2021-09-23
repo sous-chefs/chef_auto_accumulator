@@ -1,10 +1,7 @@
-# chef_auto_accumulator CHANGELOG
+# CHANGELOG for chef_auto_accumulator
 
-This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
+This file is used to list changes made in each version of chef_auto_accumulator.
 
 ## 0.1.0
 
-Initial release.
-
-- change 0
-- change 1
+- Initial release
