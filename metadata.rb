@@ -16,3 +16,7 @@ supports 'oracle'
 supports 'redhat'
 supports 'scientific'
 supports 'ubuntu'
+
+gem 'deepsort'
+gem 'inifile'
+gem 'toml-rb'
