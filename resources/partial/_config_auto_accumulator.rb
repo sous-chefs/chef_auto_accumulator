@@ -1,6 +1,6 @@
 #
 # Cookbook:: chef_auto_accumulator
-# Resource:: _config_file
+# Resource:: _config_auto_accumulator
 #
 # Copyright:: Ben Hughes <bmhughes@bmhughes.co.uk>
 #
@@ -30,7 +30,8 @@ property :config_directory, String,
           desired_state: false
 
 property :config_file, String,
-          proc: proc { |p| ::File.join(conf_directory, p) },
+          required: true,
+          coerce: proc { |p| ::File.join(config_directory, p) },
           desired_state: false
 
 property :load_existing_config_file, true,
@@ -67,7 +68,12 @@ load_current_value do |new_resource|
     return
   end
 
-  current_config = load_config_file_section(new_resource.config_file)
+  current_config = if option_config_path_type.eql?(:array)
+                     load_config_file_section_item(new_resource.config_file, option_config_path_match_field, option_config_path_match_value)
+                   else
+                     load_config_file_section(new_resource.config_file)
+                   end
+
   current_value_does_not_exist! if nil_or_empty?(current_config)
 
   if ::File.exist?(new_resource.config_file)
@@ -88,34 +94,52 @@ load_current_value do |new_resource|
   extra_options(extra_options_filtered) unless nil_or_empty?(extra_options_filtered)
 end
 
+def auto_accumulator_options
+  {
+    config_file_type: :json,
+    config_base_path: 'isc_kea_config_',
+    property_name_gsub: %w(_ -),
+  }.freeze
+end
+
 action_class do
   include ChefAutoAccumulator::Resource
 end
 
 action :create do
   converge_if_changed do
-    resource_properties.each do |rp|
-      next if nil_or_empty?(new_resource.send(rp))
+    if option_config_path_type.eql?(:array)
+      map = resource_properties.map do |rp|
+        next if nil_or_empty?(new_resource.send(rp))
 
-      accumulator_config(:set, rp, new_resource.send(rp))
+        [translate_property_value(rp), new_resource.send(rp)]
+      end.compact.to_h
+
+      accumulator_config(action: :array_push, value: map)
+    else
+      resource_properties.each do |rp|
+        next if nil_or_empty?(new_resource.send(rp))
+
+        accumulator_config(action: :set, key: rp, value: new_resource.send(rp))
+      end
+
+      new_resource.extra_options.each { |key, value| accumulator_config(:set, key, value) } if property_is_set?(:extra_options)
     end
-
-    new_resource.extra_options.each { |key, value| accumulator_config(:set, key, value) } if property_is_set?(:extra_options)
   end
 end
 
-action :delete do
-  set_properties = resource_properties.push(:extra_options).filter { |rp| property_is_set?(rp) }
-  delete_properties = nil_or_empty?(set_properties) ? resource_properties : set_properties
-  diff_properties = delete_properties.filter { |dp| load_config_file_section(new_resource.config_file).key?(translate_property_value(dp)) }
-  diff_properties.map! { |dp| translate_property_value(dp) }
+# action :delete do
+#   set_properties = resource_properties.push(:extra_options).filter { |rp| property_is_set?(rp) }
+#   delete_properties = nil_or_empty?(set_properties) ? resource_properties : set_properties
+#   diff_properties = delete_properties.filter { |dp| load_config_auto_accumulator_section(new_resource.config_file).key?(translate_property_value(dp)) }
+#   diff_properties.map! { |dp| translate_property_value(dp) }
 
-  if property_is_set?(:extra_options)
-    extra_options_diff = new_resource.extra_options.keys.filter { |eo| load_config_file_section(new_resource.config_file).key?(eo) }
-    diff_properties.concat(extra_options_diff) unless nil_or_empty?(extra_options_diff)
-  end
+#   if property_is_set?(:extra_options)
+#     extra_options_diff = new_resource.extra_options.keys.filter { |eo| load_config_auto_accumulator_section(new_resource.config_file).key?(eo) }
+#     diff_properties.concat(extra_options_diff) unless nil_or_empty?(extra_options_diff)
+#   end
 
-  converge_by("Deleting configuration for #{diff_properties.join(', ')}") do
-    diff_properties.each { |rp| accumulator_config(:delete, rp) }
-  end unless diff_properties.empty?
-end
+#   converge_by("Deleting configuration for #{diff_properties.join(', ')}") do
+#     diff_properties.each { |rp| accumulator_config(action: :delete, key: rp) }
+#   end unless diff_properties.empty?
+# end
