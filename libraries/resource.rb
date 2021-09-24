@@ -76,23 +76,34 @@ module ChefAutoAccumulator
     # @param value [any] Value to assign to key
     # @return [nil]
     #
-    def accumulator_config(action, key, value = nil)
+    def accumulator_config(action:, key: nil, value: nil)
       path = resource_config_path
-      config_hash = accumulator_config_path_init(*path)
+      config_path = accumulator_config_path_init(action, *path)
 
-      Chef::Log.warn("Perfoming action #{action} on config key #{key}, value #{debug_var_output(value)} on path #{path.map { |p| "['#{p}']" }.join}")
+      log_string = ''
+      log_string.concat("Perfoming action #{action} on ")
+      log_string.concat("config key #{debug_var_output(key)}, ") if key
+      log_string.concat("value #{debug_var_output(value)} on ") if value
+      log_string.concat("path #{path.map { |p| "['#{p}']" }.join} #{debug_var_output(config_path)}")
+      Chef::Log.warn(log_string)
 
       case action
       when :set
-        config_hash[translate_property_value(key)] = value
+        config_path[translate_property_value(key)] = value
       when :append
-        config_hash[translate_property_value(key)] ||= ''
-        config_hash[translate_property_value(key)].concat(value.to_s)
-      when :push
-        config_hash[translate_property_value(key)] ||= []
-        config_hash[translate_property_value(key)].push(value)
+        config_path[translate_property_value(key)] ||= ''
+        config_path[translate_property_value(key)].concat(value.to_s)
+      when :key_push
+        config_path[translate_property_value(key)] ||= []
+        config_path[translate_property_value(key)].push(value)
+      when :key_delete
+        config_path[translate_property_value(key)].delete(value)
+      when :array_push
+        config_path.push(value) unless config_path.include?(value)
+      when :array_delete
+        config_path.delete(value) if config_path.include?(value)
       when :delete
-        config_hash.delete(translate_property_value(key)) if config_hash.key?(translate_property_value(key))
+        config_path.delete(translate_property_value(key)) if config_path.key?(translate_property_value(key))
       else
         raise ArgumentError, "Unsupported accumulator config action #{action}"
       end
@@ -124,7 +135,7 @@ module ChefAutoAccumulator
 
       config_content = if new_resource.load_existing_config_file
                          existing_config_load = load_config_file(new_resource.config_file) || {}
-                         Chef::Log.warn("init_config_template: Existing config load data: [#{existing_config_load.class}] #{existing_config_load}")
+                         Chef::Log.info("init_config_template: Existing config load data: [#{existing_config_load.class}] #{existing_config_load}")
 
                          existing_config_load
                        else
@@ -166,20 +177,28 @@ module ChefAutoAccumulator
     # @param *path [String, Symbol, Array<String>, Array<Symbol>] The path to initialise
     # @return [Hash] The initialised Hash object
     #
-    def accumulator_config_path_init(*path)
+    def accumulator_config_path_init(action, *path)
       init_config_template unless config_template_exist?
 
       return config_file_template_content if path.all? { |p| p.is_a?(NilClass) } # Root path specified
-      return config_file_template_content.dig(*path) if config_file_template_content.dig(*path).is_a?(Hash) # Return path if it exists
 
-      Chef::Log.warn("accumulator_config_path_init: Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
-      config_hash = config_file_template_content
-      path.each do |pn|
-        config_hash[pn] ||= {}
-        config_hash = config_hash[pn]
+      # Return path if it exists
+      existing_path = config_file_template_content.dig(*path)
+      return existing_path if existing_path.is_a?(Array) || existing_path.is_a?(Hash)
+
+      Chef::Log.debug("accumulator_config_path_init: Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
+      config_path = config_file_template_content
+      path.each do |l|
+        config_path[l] ||= if %i(array_push array_delete).include?(action) && l.eql?(path.last)
+                             []
+                           else
+                             {}
+                           end
+
+        config_path = config_path[l]
       end
 
-      config_hash
+      config_path
     end
 
     # Return the relevant configuration file template resources variables configuration key
