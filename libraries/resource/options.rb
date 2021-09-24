@@ -22,9 +22,9 @@ module ChefAutoAccumulator
     module Options
       private
 
-      # Return the base configuration path to strip
+      # Return the configuration file type from resource options
       #
-      # @return [Array, nil] Configured base path
+      # @return [Symbol] Configuration file type
       #
       def option_config_file_type
         type = resource_options.fetch(:config_file_type, nil)
@@ -95,6 +95,20 @@ module ChefAutoAccumulator
                                                                                                                               gsub.all? { |v| v.is_a?(String) }
 
         gsub
+      end
+
+      # Return the resource property translation matrix (if defined)
+      #
+      # @return [Hash, nil] Translation matrix
+      #
+      def option_property_translation_matrix
+        matrix = resource_options.fetch(:property_translation_matrix, nil)
+        Chef::Log.debug("option_property_translation_matrix: #{debug_var_output(gsub)}")
+
+        return unless matrix
+        raise ArgumentError, "Property translation matrix configuration must be specified as a Hash, got #{debug_var_output(matrix)}" unless matrix.is_a?(Hash)
+
+        matrix
       end
 
       # Get the actual resource options for the resource (if defined)
