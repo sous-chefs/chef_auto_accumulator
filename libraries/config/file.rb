@@ -55,6 +55,27 @@ module ChefAutoAccumulator
 
         section_config
       end
+
+      # Load a configuration item from a section on disk, the first match is returned
+      #
+      # @param config_file [String] The configuration file to load
+      # @param match_field [String, Symbol] The Hash field to match against
+      # @param match_value [any] The value to match against
+      # @return [Hash] Configuration file contents
+      #
+      def load_config_file_section_item(config_file, match_field, match_value)
+        config = load_config_file_section(config_file)
+
+        return if nil_or_empty?(config)
+
+        item = config.select { |od| od[match_field].eql?(match_value) }
+        raise unless item.one?
+        item = item.first
+
+        Chef::Log.debug("load_config_file_section_item: #{config_file} match field #{debug_var_output(match_field)} value #{debug_var_output(match_value)}. Result #{debug_var_output(item)}")
+
+        item
+      end
     end
   end
 end
