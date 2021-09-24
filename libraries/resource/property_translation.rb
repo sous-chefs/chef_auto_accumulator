@@ -30,6 +30,7 @@ module ChefAutoAccumulator
       # @return [String] The (translated if required) property name
       #
       def translate_property_key(value)
+        return unless value
         return option_property_translation_matrix.key(value) if option_property_translation_matrix &&
                                                                 option_property_translation_matrix.value?(value)
 
@@ -46,6 +47,7 @@ module ChefAutoAccumulator
       # @return [String] The (translated if required) config property name
       #
       def translate_property_value(key)
+        return unless key
         return option_property_translation_matrix.fetch(key) if option_property_translation_matrix &&
                                                                 option_property_translation_matrix.key?(key)
 
