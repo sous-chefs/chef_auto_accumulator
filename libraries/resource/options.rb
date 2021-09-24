@@ -65,6 +65,38 @@ module ChefAutoAccumulator
         path
       end
 
+      # Return the resource configuration path type
+      #
+      # @return [Symbol, nil] Path type
+      #
+      def option_config_path_type
+        type = resource_options.fetch(:config_path_type, :hash)
+        Chef::Log.debug("option_config_path_type: #{debug_var_output(type)}")
+
+        raise ArgumentError, "Invalid config path type #{debug_var_output(type)}" unless %i(array hash).include?(type)
+
+        type
+      end
+
+      def option_config_path_match_field
+        match_field = resource_options.fetch(:config_path_match_field, nil)
+        Chef::Log.debug("option_config_path_match_field: #{debug_var_output(match_field)}")
+
+        raise ArgumentError, "Match field must be String or Symbol, got #{debug_var_output(match_field)}" unless match_field.is_a?(String) ||
+                                                                                                                 match_field.is_a?(Symbol)
+
+        match_field
+      end
+
+      def option_config_path_match_value
+        match_value = resource_options.fetch(:config_path_match_value, nil)
+        Chef::Log.debug("option_config_path_match_value: #{debug_var_output(match_value)}")
+
+        raise ArgumentError, 'Match value must be set if config path type is :array' unless match_value
+
+        match_value
+      end
+
       # Return the resource configuration path override (if defined)
       #
       # @return [Array, nil] Configured path override
@@ -103,7 +135,7 @@ module ChefAutoAccumulator
       #
       def option_property_translation_matrix
         matrix = resource_options.fetch(:property_translation_matrix, nil)
-        Chef::Log.debug("option_property_translation_matrix: #{debug_var_output(gsub)}")
+        Chef::Log.debug("option_property_translation_matrix: #{debug_var_output(matrix)}")
 
         return unless matrix
         raise ArgumentError, "Property translation matrix configuration must be specified as a Hash, got #{debug_var_output(matrix)}" unless matrix.is_a?(Hash)
@@ -124,11 +156,15 @@ module ChefAutoAccumulator
 
         # Per-resource overrides
         overrides = if !action_class? && respond_to?(:auto_accumulator_options_override)
-                      options.merge(auto_accumulator_options_override)
+                      auto_accumulator_options_override
                     elsif action_class? && new_resource.respond_to?(:auto_accumulator_options_override)
-                      options.merge(new_resource.auto_accumulator_options_override)
+                      new_resource.auto_accumulator_options_override
                     end
-        options = options.merge(overrides).freeze if overrides
+
+        if overrides
+          Chef::Log.debug("resource_options: Override #{debug_var_output(overrides)}")
+          options = options.merge(overrides).freeze
+        end
 
         Chef::Log.debug("resource_options: #{debug_var_output(options)}")
         return {} unless options
