@@ -95,9 +95,9 @@ module ChefAutoAccumulator
         config_path[translate_property_value(key)].concat(value.to_s)
       when :key_push
         config_path[translate_property_value(key)] ||= []
-        config_path[translate_property_value(key)].push(value)
+        config_path[translate_property_value(key)].push(value) unless config_path.include?(value)
       when :key_delete
-        config_path[translate_property_value(key)].delete(value)
+        config_path[translate_property_value(key)].delete(value) if config_path.include?(value)
       when :array_push
         config_path.push(value) unless config_path.include?(value)
       when :array_delete
