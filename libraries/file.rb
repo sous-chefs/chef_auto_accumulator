@@ -34,18 +34,21 @@ module ChefAutoAccumulator
     def config_file_type
       type = option_config_file_type
       raise ArgumentError, "Unsupported file type #{debug_var_output(type)}" unless SUPPORTED_TYPES.include?(type)
-      Chef::Log.debug("Config file type '#{type}'")
+      Chef::Log.debug("config_file_type: Config file type '#{type}'")
 
       type
     end
 
     def config_file_template_default
-      template = if config_file_type.eql?(:JSON)
+      template = case config_file_type
+                 when :JSON
                    'file_bare.erb'
-                 else
+                 when :INI, :TOML, YAML
                    'file.erb'
+                 else
+                   raise ArgumentError, "Unsupported file type #{debug_var_output(type)}"
                  end
-      Chef::Log.debug("Config file template '#{template}'")
+      Chef::Log.debug("config_file_template_default: Config file template '#{template}'")
 
       template
     end
@@ -56,7 +59,7 @@ module ChefAutoAccumulator
     # @return [Hash] File contents
     #
     def load_file(file, type = config_file_type)
-      Chef::Log.debug("Sending :load_file to module #{type} with file #{file}")
+      Chef::Log.debug("load_file: Sending :load_file to module #{type} with file #{file}")
 
       ChefAutoAccumulator::File.const_get(type).send(:load_file, file)
     end
@@ -67,7 +70,7 @@ module ChefAutoAccumulator
     # @return [String] Formatted output
     #
     def save_file(file, type = config_file_type)
-      Chef::Log.debug("Sending :save_file to module #{type} with file #{file}")
+      Chef::Log.debug("save_file: Sending :save_file to module #{type} with file #{file}")
 
       ChefAutoAccumulator::File.const_get(type).send(:file_string, file)
     end
