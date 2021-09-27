@@ -79,12 +79,12 @@ module ChefAutoAccumulator
     def accumulator_config(action:, key: nil, value: nil)
       path = resource_config_path
       config_path = case option_config_path_type
-                    when :contained_array
-                      accumulator_config_containing_path_init(action: action, path: path)
                     when :hash, :array
                       accumulator_config_path_init(action, *path)
+                    when :contained_array
+                      accumulator_config_containing_path_init(action: action, path: path)
                     else
-                      raise
+                      raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
                     end
 
       log_string = ''
@@ -106,15 +106,51 @@ module ChefAutoAccumulator
       when :key_delete
         config_path[translate_property_value(key)] ||= []
         config_path[translate_property_value(key)].delete(value) if config_path.include?(value)
+      when :key_delete_match
+        config_path[translate_property_value(key)] ||= []
+        config_path[translate_property_value(key)].delete_if { |v| v[translate_property_value(option_config_match_key)].eql?(option_config_match_value) }
       when :array_push
         config_path.push(value) unless config_path.include?(value)
       when :array_delete
         config_path.delete(value) if config_path.include?(value)
+      when :array_delete_match
+        config_path.delete_if { |v| v[translate_property_value(key)].eql?(value) }
       when :delete
         config_path.delete(translate_property_value(key)) if config_path.key?(translate_property_value(key))
       else
         raise ArgumentError, "Unsupported accumulator config action #{action}"
       end
+    end
+
+    # Check if a given configuration path contains the configuration for this resource
+    #
+    # @return [TrueClass, FalseClass]
+    #
+    def accumulator_config_present?
+      path = resource_config_path
+      result = case option_config_path_type
+               when :array
+                 key = translate_property_value(option_config_path_match_key)
+                 value = option_config_path_match_value
+
+                 Chef::Log.debug("accumulator_config_present?: Testing :array for #{debug_var_output(key)} | #{debug_var_output(value)}")
+
+                 !accumulator_config_path_init(action, *path).find_index { |v| v[translate_property_value(key)].eql?(value) }.nil?
+               when :contained_array
+                 key = translate_property_value(option_config_match_key)
+                 value = option_config_match_value
+
+                 Chef::Log.debug("accumulator_config_present?: Testing :contained_array #{debug_var_output(option_config_path_contained_key)} for #{debug_var_output(key)} | #{debug_var_output(value)}")
+
+                 config = accumulator_config_containing_path_init(action: action, path: path).fetch(option_config_path_contained_key, [])
+                 !config.find_index { |v| v[key].eql?(value) }.nil?
+               else
+                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
+               end
+
+      Chef::Log.warn("accumulator_config_present?: Result #{debug_var_output(result)}")
+
+      result
     end
 
     # Check if a given configuration file template resource exists
