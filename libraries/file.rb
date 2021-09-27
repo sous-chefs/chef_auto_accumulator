@@ -29,7 +29,7 @@ module ChefAutoAccumulator
   module File
     include ChefAutoAccumulator::Utils
 
-    SUPPORTED_TYPES = %i(INI JSON TOML YAML).freeze
+    SUPPORTED_TYPES = %i(INI JSON JSONC TOML YAML).freeze
 
     def config_file_type
       type = option_config_file_type
@@ -43,7 +43,7 @@ module ChefAutoAccumulator
       template = case config_file_type
                  when :JSON
                    'file_bare.erb'
-                 when :INI, :TOML, YAML
+                 when :INI, :JSONC, :TOML, YAML
                    'file.erb'
                  else
                    raise ArgumentError, "Unsupported file type #{debug_var_output(type)}"
