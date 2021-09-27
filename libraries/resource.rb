@@ -57,7 +57,7 @@ module ChefAutoAccumulator
     #
     def resource_properties
       properties = instance_variable_defined?(:@new_resource) ? new_resource.class.properties(false).keys : self.class.properties(false).keys
-      Chef::Log.debug("resource_properties: Got properties from resource: #{properties.join(', ')}")
+      Chef::Log.debug("resource_properties: Got properties from resource:\n\n\t#{properties.sort.join("\n\t")}")
       properties.reject! { |p| GLOBAL_CONFIG_PROPERTIES_SKIP.include?(p) }
 
       if option_config_properties_skip
