@@ -20,6 +20,9 @@
 module ChefAutoAccumulator
   module Resource
     module Options
+      ALLOWED_PATH_TYPES = %i(hash array contained_array).freeze
+      private_constant :ALLOWED_PATH_TYPES
+
       private
 
       # Return the configuration file type from resource options
@@ -71,28 +74,75 @@ module ChefAutoAccumulator
       #
       def option_config_path_type
         type = resource_options.fetch(:config_path_type, :hash)
-        Chef::Log.debug("option_config_path_type: #{debug_var_output(type)}")
 
-        raise ArgumentError, "Invalid config path type #{debug_var_output(type)}" unless %i(array hash).include?(type)
+        raise ArgumentError, "Invalid path type #{type}" unless ALLOWED_PATH_TYPES.include?(type)
+        Chef::Log.debug("option_config_path_type: #{debug_var_output(type)}")
 
         type
       end
 
-      def option_config_path_match_field
-        match_field = resource_options.fetch(:config_path_match_field, nil)
-        Chef::Log.debug("option_config_path_match_field: #{debug_var_output(match_field)}")
+      # Return the key to match the resource configuration path against
+      #
+      # @return [Symbol, nil] Path type
+      #
+      def option_config_path_match_key
+        match_key = resource_options.fetch(:config_path_match_key, nil)
+        Chef::Log.debug("option_config_path_match_key: #{debug_var_output(match_key)}")
 
-        raise ArgumentError, "Match field must be String or Symbol, got #{debug_var_output(match_field)}" unless match_field.is_a?(String) ||
-                                                                                                                 match_field.is_a?(Symbol)
+        raise ArgumentError, "Match key must be String or Symbol, got #{debug_var_output(match_key)}" unless match_key.is_a?(String) ||
+                                                                                                             match_key.is_a?(Symbol)
 
-        match_field
+        match_key
       end
 
+      # Return the value to match the resource configuration path against
+      #
+      # @return [Symbol, nil] Path type
+      #
       def option_config_path_match_value
         match_value = resource_options.fetch(:config_path_match_value, nil)
         Chef::Log.debug("option_config_path_match_value: #{debug_var_output(match_value)}")
 
         raise ArgumentError, 'Match value must be set if config path type is :array' unless match_value
+
+        match_value
+      end
+
+      # Return the key to store the contained configuration in on the filtered configuration path object
+      #
+      # @return [Symbol, nil] Path type
+      #
+      def option_config_path_contained_key
+        contained_key = resource_options.fetch(:config_path_contained_key, nil)
+        Chef::Log.debug("option_config_path_contained_key: #{debug_var_output(contained_key)}")
+
+        raise ArgumentError, 'Contained key?' unless contained_key
+
+        contained_key
+      end
+
+      # Return the key to match the resource configuration against for load_current_value
+      #
+      # @return [Symbol, nil] Path type
+      #
+      def option_config_match_key
+        match_key = resource_options.fetch(:config_match_key, nil)
+        Chef::Log.debug("option_config_match_key: #{debug_var_output(match_key)}")
+
+        raise ArgumentError, 'No LCV match key specified' unless match_key
+
+        match_key
+      end
+
+      # Return the value to match the resource configuration against for load_current_value
+      #
+      # @return [Symbol, nil] Path type
+      #
+      def option_config_match_value
+        match_value = resource_options.fetch(:config_match_value, nil)
+        Chef::Log.debug("option_config_match_value: #{debug_var_output(match_value)}")
+
+        raise ArgumentError, 'No LCV match value specified' unless match_value
 
         match_value
       end
@@ -169,7 +219,7 @@ module ChefAutoAccumulator
         Chef::Log.debug("resource_options: #{debug_var_output(options)}")
         return {} unless options
 
-        raise "The resource options should be defined as a Hash, got #{options.class}" unless options.is_a?(Hash)
+        raise ArgumentError, "The resource options should be defined as a Hash, got #{options.class}" unless options.is_a?(Hash)
 
         options
       end

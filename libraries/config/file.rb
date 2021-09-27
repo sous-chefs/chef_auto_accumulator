@@ -36,7 +36,10 @@ module ChefAutoAccumulator
       def load_config_file(config_file)
         return unless ::File.exist?(config_file)
 
-        load_file(config_file)
+        config = load_file(config_file)
+        Chef::Log.debug("load_config_file: #{config_file} - #{debug_var_output(config)}")
+
+        config
       end
 
       # Load a section from the on disk configuration file
@@ -59,22 +62,43 @@ module ChefAutoAccumulator
       # Load a configuration item from a section on disk, the first match is returned
       #
       # @param config_file [String] The configuration file to load
-      # @param match_field [String, Symbol] The Hash field to match against
+      # @param match_key [String, Symbol] The Hash key to match against
       # @param match_value [any] The value to match against
-      # @return [Hash] Configuration file contents
+      # @return [Hash] Configuration item contents
       #
-      def load_config_file_section_item(config_file, match_field, match_value)
+      def load_config_file_section_item(config_file)
         config = load_config_file_section(config_file)
 
         return if nil_or_empty?(config)
 
-        item = config.select { |od| od[match_field].eql?(match_value) }
-        raise unless item.one?
+        Chef::Log.debug("load_config_file_section_item: Filtering on #{debug_var_output(translate_property_value(option_config_path_match_key))} | #{debug_var_output(option_config_path_match_value)}")
+        item = config.select { |cs| cs[translate_property_value(option_config_path_match_key)].eql?(option_config_path_match_value) }.uniq
+        Chef::Log.debug("load_config_file_section_item: Items #{debug_var_output(item)}")
+        raise unless item.one? || item.empty?
         item = item.first
 
-        Chef::Log.debug("load_config_file_section_item: #{config_file} match field #{debug_var_output(match_field)} value #{debug_var_output(match_value)}. Result #{debug_var_output(item)}")
+        Chef::Log.debug("load_config_file_section_item: #{config_file} match key #{debug_var_output(option_config_path_match_key)} value #{debug_var_output(option_config_path_match_value)}. Result #{debug_var_output(item)}")
 
         item
+      end
+
+      # Load a contained configuration item from a section on disk, the first match is returned
+      #
+      # @param config_file [String] The configuration file to load
+      # @return [Hash] Contained configuration item contents
+      #
+      def load_config_file_section_contained_item(config_file)
+        config = load_config_file_section_item(config_file)
+
+        return if nil_or_empty?(config)
+
+        outer_key_config = config.fetch(option_config_path_contained_key, nil)
+        Chef::Log.debug("load_config_file_section_contained_item: Filtering on #{debug_var_output(translate_property_value(option_config_match_key))} | #{debug_var_output(option_config_match_value)}")
+        item = outer_key_config.select { |ci| ci[translate_property_value(option_config_match_key)].eql?(option_config_match_value) }.uniq
+        Chef::Log.debug("load_config_file_section_item: Items #{debug_var_output(item)}")
+        raise unless item.one? || item.empty?
+
+        item.first
       end
     end
   end

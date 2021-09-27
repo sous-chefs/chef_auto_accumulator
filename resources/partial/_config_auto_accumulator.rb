@@ -68,10 +68,13 @@ load_current_value do |new_resource|
     return
   end
 
-  current_config = if option_config_path_type.eql?(:array)
-                     load_config_file_section_item(new_resource.config_file, option_config_path_match_field, option_config_path_match_value)
-                   else
+  current_config = case option_config_path_type
+                   when :hash
                      load_config_file_section(new_resource.config_file)
+                   when :array
+                     load_config_file_section_item(new_resource.config_file)
+                   when :contained_array
+                     load_config_file_section_contained_item(new_resource.config_file)
                    end
 
   current_value_does_not_exist! if nil_or_empty?(current_config)
@@ -94,10 +97,19 @@ load_current_value do |new_resource|
   extra_options(extra_options_filtered) unless nil_or_empty?(extra_options_filtered)
 end
 
+# Example only!
 def auto_accumulator_options
   {
     config_file_type: :json,
     config_base_path: 'isc_kea_config_',
+    config_properties_skip: %i(subnet_id),
+    config_path_override: %w(Dhcp4 subnet4),
+    config_path_type: :contained_array,
+    config_path_match_key: 'id',
+    config_path_match_value: subnet_id,
+    config_path_contained_key: 'reservations',
+    config_match_key: 'ip_address',
+    config_match_value: ip_address,
     property_name_gsub: %w(_ -),
   }.freeze
 end
@@ -108,7 +120,8 @@ end
 
 action :create do
   converge_if_changed do
-    if option_config_path_type.eql?(:array)
+    case option_config_path_type
+    when :array
       map = resource_properties.map do |rp|
         next if nil_or_empty?(new_resource.send(rp))
 
@@ -116,7 +129,15 @@ action :create do
       end.compact.to_h
 
       accumulator_config(action: :array_push, value: map)
-    else
+    when :contained_array
+      map = resource_properties.map do |rp|
+        next if nil_or_empty?(new_resource.send(rp))
+
+        [translate_property_value(rp), new_resource.send(rp)]
+      end.compact.to_h
+
+      accumulator_config(action: :key_push, key: option_config_path_contained_key, value: map)
+    when :hash
       resource_properties.each do |rp|
         next if nil_or_empty?(new_resource.send(rp))
 
@@ -124,6 +145,8 @@ action :create do
       end
 
       new_resource.extra_options.each { |key, value| accumulator_config(:set, key, value) } if property_is_set?(:extra_options)
+    else
+      raise "Unknown config path type #{debug_var_output(option_config_path_type)}"
     end
   end
 end

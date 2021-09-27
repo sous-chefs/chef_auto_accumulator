@@ -61,7 +61,7 @@ module ChefAutoAccumulator
       properties.reject! { |p| GLOBAL_CONFIG_PROPERTIES_SKIP.include?(p) }
 
       if option_config_properties_skip
-        Chef::Log.debug("resource_properties: Resourced defined skip properties: #{skip_properties.join(', ')}")
+        Chef::Log.debug("resource_properties: Resourced defined skip properties: #{option_config_properties_skip.join(', ')}")
         properties.reject! { |p| option_config_properties_skip.include?(p) }
       end
 
@@ -78,7 +78,14 @@ module ChefAutoAccumulator
     #
     def accumulator_config(action:, key: nil, value: nil)
       path = resource_config_path
-      config_path = accumulator_config_path_init(action, *path)
+      config_path = case option_config_path_type
+                    when :contained_array
+                      accumulator_config_containing_path_init(action: action, path: path)
+                    when :hash, :array
+                      accumulator_config_path_init(action, *path)
+                    else
+                      raise
+                    end
 
       log_string = ''
       log_string.concat("Perfoming action #{action} on ")
@@ -97,6 +104,7 @@ module ChefAutoAccumulator
         config_path[translate_property_value(key)] ||= []
         config_path[translate_property_value(key)].push(value) unless config_path.include?(value)
       when :key_delete
+        config_path[translate_property_value(key)] ||= []
         config_path[translate_property_value(key)].delete(value) if config_path.include?(value)
       when :array_push
         config_path.push(value) unless config_path.include?(value)
@@ -172,10 +180,10 @@ module ChefAutoAccumulator
       true
     end
 
-    # Initialise a Hash path for a configuration file template resources variables
+    # Initialise a path for a configuration file template resources variables
     #
     # @param *path [String, Symbol, Array<String>, Array<Symbol>] The path to initialise
-    # @return [Hash] The initialised Hash object
+    # @return [Hash, Array] The initialised config container object
     #
     def accumulator_config_path_init(action, *path)
       init_config_template unless config_template_exist?
@@ -189,7 +197,7 @@ module ChefAutoAccumulator
       Chef::Log.debug("accumulator_config_path_init: Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
       config_path = config_file_template_content
       path.each do |l|
-        config_path[l] ||= if %i(array_push array_delete).include?(action) && l.eql?(path.last)
+        config_path[l] ||= if %i(array_push array_delete key_push key_delete).include?(action) && l.eql?(path.last)
                              []
                            else
                              {}
@@ -199,6 +207,28 @@ module ChefAutoAccumulator
       end
 
       config_path
+    end
+
+    # Initialise and return a containing path object, for when a configuration item is contained within another
+    #
+    # @param action [Symbol] Action to perform
+    # @param filter_key [String, Symbol] The Hash key to filter on
+    # @param filter_value [any] The value to filter against
+    # @param path [String, Symbol, Array<String>, Array<Symbol>] The path to initialise
+    # @return [Hash] The initialised Hash object
+    #
+    def accumulator_config_containing_path_init(action:, filter_key: option_config_path_match_key, filter_value: option_config_path_match_value, path:)
+      raise ArgumentError unless path.is_a?(Array)
+
+      # Find the object that matches the filter, init if required
+      parent_path = accumulator_config_path_init(action, *path)
+      return parent_path if path.all? { |p| p.is_a?(NilClass) } # Root path specified
+      raise "The contained parent path should respond to :filter, class #{parent_path.class} does not" unless parent_path.respond_to?(:filter)
+
+      filter_object = parent_path.filter { |v| v[filter_key].eql?(filter_value) }
+      raise unless filter_object.one?
+
+      filter_object.first
     end
 
     # Return the relevant configuration file template resources variables configuration key
