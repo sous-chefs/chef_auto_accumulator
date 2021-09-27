@@ -53,7 +53,11 @@ module ChefAutoAccumulator
     #
     def debug_var_output(var)
       output = "[#{var.class}]"
-      output.concat(" #{var}") if var
+      if var
+        var_output = var.to_s
+        var_output.prepend(':') if var.is_a?(Symbol)
+        output.concat(" #{var_output}")
+      end
 
       output
     end
