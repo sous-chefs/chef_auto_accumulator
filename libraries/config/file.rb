@@ -89,14 +89,16 @@ module ChefAutoAccumulator
       #
       def load_config_file_section_contained_item(config_file)
         config = load_config_file_section_item(config_file)
-
         return if nil_or_empty?(config)
 
         outer_key_config = config.fetch(option_config_path_contained_key, nil)
+        return if nil_or_empty?(outer_key_config)
+
         Chef::Log.debug("load_config_file_section_contained_item: Filtering on #{debug_var_output(translate_property_value(option_config_match_key))} | #{debug_var_output(option_config_match_value)}")
         item = outer_key_config.select { |ci| ci[translate_property_value(option_config_match_key)].eql?(option_config_match_value) }.uniq
         Chef::Log.debug("load_config_file_section_item: Items #{debug_var_output(item)}")
-        raise unless item.one? || item.empty?
+
+        raise "Expected either one or none of filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}" unless item.one? || item.empty?
 
         item.first
       end

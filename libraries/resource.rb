@@ -79,12 +79,12 @@ module ChefAutoAccumulator
     def accumulator_config(action:, key: nil, value: nil)
       path = resource_config_path
       config_path = case option_config_path_type
-                    when :hash, :array
+                    when :hash, :hash_contained, :array
                       accumulator_config_path_init(action, *path)
-                    when :contained_array
+                    when :array_contained
                       accumulator_config_containing_path_init(action: action, path: path)
                     else
-                      raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
+                      raise ArgumentError, "Unknown config path type #{debug_var_output(option_config_path_type)}"
                     end
 
       log_string = ''
@@ -92,7 +92,7 @@ module ChefAutoAccumulator
       log_string.concat("config key #{debug_var_output(key)}, ") if key
       log_string.concat("value #{debug_var_output(value)} on ") if value
       log_string.concat("path #{path.map { |p| "['#{p}']" }.join} #{debug_var_output(config_path)}")
-      Chef::Log.warn(log_string)
+      Chef::Log.info(log_string)
 
       case action
       when :set
@@ -230,7 +230,7 @@ module ChefAutoAccumulator
       existing_path = config_file_template_content.dig(*path)
       return existing_path if existing_path.is_a?(Array) || existing_path.is_a?(Hash)
 
-      Chef::Log.debug("accumulator_config_path_init: Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
+      Chef::Log.warn("accumulator_config_path_init: Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
       config_path = config_file_template_content
       path.each do |l|
         config_path[l] ||= if %i(array_push array_delete key_push key_delete).include?(action) && l.eql?(path.last)
@@ -258,11 +258,14 @@ module ChefAutoAccumulator
 
       # Find the object that matches the filter, init if required
       parent_path = accumulator_config_path_init(action, *path)
+      Chef::Log.warn("accumulator_config_containing_path_init: Got parent path #{debug_var_output(parent_path)}")
       return parent_path if path.all? { |p| p.is_a?(NilClass) } # Root path specified
       raise "The contained parent path should respond to :filter, class #{parent_path.class} does not" unless parent_path.respond_to?(:filter)
 
+      Chef::Log.warn("accumulator_config_containing_path_init: Filtering on #{debug_var_output(filter_key)} | #{debug_var_output(filter_value)}")
       filter_object = parent_path.filter { |v| v[filter_key].eql?(filter_value) }
-      raise unless filter_object.one?
+      Chef::Log.warn("accumulator_config_containing_path_init: Got filtered value #{debug_var_output(filter_object)}")
+      raise "Expected a single filtered object, got #{filter_object.count}. #{debug_var_output(filter_object)}" unless filter_object.one?
 
       filter_object.first
     end

@@ -20,7 +20,7 @@
 module ChefAutoAccumulator
   module Resource
     module Options
-      ALLOWED_PATH_TYPES = %i(hash array contained_array).freeze
+      ALLOWED_PATH_TYPES = %i(hash hash_contained array array_contained).freeze
       private_constant :ALLOWED_PATH_TYPES
 
       private
@@ -116,7 +116,7 @@ module ChefAutoAccumulator
         contained_key = resource_options.fetch(:config_path_contained_key, nil)
         Chef::Log.debug("option_config_path_contained_key: #{debug_var_output(contained_key)}")
 
-        raise ArgumentError, 'Contained key?' unless contained_key
+        raise ArgumentError, "Contained key not set, got #{debug_var_output(contained_key)}" unless contained_key
 
         contained_key
       end
