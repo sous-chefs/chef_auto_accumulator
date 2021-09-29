@@ -25,13 +25,8 @@ property :sensitive, [true, false],
           default: false,
           desired_state: false
 
-property :config_directory, String,
-          required: true,
-          desired_state: false
-
 property :config_file, String,
           required: true,
-          coerce: proc { |p| ::File.join(config_directory, p) },
           desired_state: false
 
 property :load_existing_config_file, true,
@@ -71,9 +66,12 @@ load_current_value do |new_resource|
   current_config = case option_config_path_type
                    when :hash
                      load_config_file_section(new_resource.config_file)
+                   when :hash_contained
+                     section = load_config_file_section(new_resource.config_file)
+                     section.fetch(option_config_path_contained_key, nil) if section.is_a?(Hash)
                    when :array
                      load_config_file_section_item(new_resource.config_file)
-                   when :contained_array
+                   when :array_contained
                      load_config_file_section_contained_item(new_resource.config_file)
                    end
 
@@ -101,15 +99,15 @@ end
 def auto_accumulator_options
   {
     config_file_type: :json,
-    config_base_path: 'isc_kea_config_',
-    config_properties_skip: %i(subnet_id),
-    config_path_override: %w(Dhcp4 subnet4),
+    config_base_path: 'chef_cookbook_auto_config_',
+    config_properties_skip: %i(test_property_skip),
+    config_path_override: %w(Test Config Path),
     config_path_type: :contained_array,
     config_path_match_key: 'id',
-    config_path_match_value: subnet_id,
-    config_path_contained_key: 'reservations',
-    config_match_key: 'ip_address',
-    config_match_value: ip_address,
+    config_path_match_value: id,
+    config_path_contained_key: 'contained_key_name',
+    config_match_key: 'name',
+    config_match_value: name,
     property_name_gsub: %w(_ -),
   }.freeze
 end
@@ -129,7 +127,7 @@ action :create do
       end.compact.to_h
 
       accumulator_config(action: :array_push, value: map)
-    when :contained_array
+    when :array_contained
       map = resource_properties.map do |rp|
         next if nil_or_empty?(new_resource.send(rp))
 
@@ -145,6 +143,14 @@ action :create do
       end
 
       new_resource.extra_options.each { |key, value| accumulator_config(:set, key, value) } if property_is_set?(:extra_options)
+    when :hash_contained
+      map = resource_properties.map do |rp|
+        next if nil_or_empty?(new_resource.send(rp))
+
+        [translate_property_value(rp), new_resource.send(rp)]
+      end.compact.to_h
+
+      accumulator_config(action: :set, key: option_config_path_contained_key, value: map)
     else
       raise "Unknown config path type #{debug_var_output(option_config_path_type)}"
     end
@@ -157,7 +163,7 @@ action :delete do
     converge_by("Deleting configuration for #{new_resource.declared_type.to_s} #{new_resource.name}") do
       accumulator_config(action: :array_delete_match, key: option_config_path_match_key, value: option_config_path_match_value)
     end if accumulator_config_present?
-  when :contained_array
+  when :array_contained
     converge_by("Deleting configuration for #{new_resource.declared_type.to_s} #{new_resource.name}") do
       accumulator_config(action: :key_delete_match, key: option_config_path_contained_key)
     end if accumulator_config_present?
