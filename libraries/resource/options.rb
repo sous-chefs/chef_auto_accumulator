@@ -19,7 +19,9 @@
 
 module ChefAutoAccumulator
   module Resource
+    # Resource property Hash accessor method and option value retrieval convience methods
     module Options
+      # List of allowed accumulated configuration path types
       ALLOWED_PATH_TYPES = %i(hash hash_contained array array_contained).freeze
       private_constant :ALLOWED_PATH_TYPES
 

@@ -21,5 +21,6 @@ require_relative 'config/file'
 require_relative 'config/path'
 
 module ChefAutoAccumulator
+  # Config base module namespace
   module Config; end
 end

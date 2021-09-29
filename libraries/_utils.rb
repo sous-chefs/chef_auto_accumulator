@@ -18,6 +18,7 @@
 #
 
 module ChefAutoAccumulator
+  # General utility methods
   module Utils
     private
 
@@ -39,7 +40,7 @@ module ChefAutoAccumulator
       false
     end
 
-    # Return whether we are being called from the action_class or the outer resource class
+    # Return whether we are being called from the Chef resource action_class or the outer definition class
     #
     # @return [true, false] True if we are being called from the action_class, otherwise false
     #
@@ -47,7 +48,7 @@ module ChefAutoAccumulator
       instance_variable_defined?(:@new_resource)
     end
 
-    # Return the formatted Class and value of a variable for debug output
+    # Return the formatted class name and value (if not Nil) of a variable for debug output
     #
     # @return [String] The formatted debug output
     #

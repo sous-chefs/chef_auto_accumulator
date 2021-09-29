@@ -22,6 +22,7 @@ require_relative '../_utils'
 
 module ChefAutoAccumulator
   module File
+    # Toml file type read and write
     module TOML
       include ChefAutoAccumulator::Utils
 

@@ -22,6 +22,7 @@ require_relative '../_utils'
 
 module ChefAutoAccumulator
   module File
+    # Json file type read and write
     module JSON
       include ChefAutoAccumulator::Utils
 

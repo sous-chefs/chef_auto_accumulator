@@ -22,6 +22,7 @@ require_relative '../file'
 
 module ChefAutoAccumulator
   module Config
+    # On disk configuration state access
     module File
       include ChefAutoAccumulator::File
       include ChefAutoAccumulator::Utils
@@ -62,8 +63,6 @@ module ChefAutoAccumulator
       # Load a configuration item from a section on disk, the first match is returned
       #
       # @param config_file [String] The configuration file to load
-      # @param match_key [String, Symbol] The Hash key to match against
-      # @param match_value [any] The value to match against
       # @return [Hash] Configuration item contents
       #
       def load_config_file_section_item(config_file)

@@ -25,6 +25,7 @@ require_relative 'resource/options'
 require_relative 'resource/property_translation'
 
 module ChefAutoAccumulator
+  # Module for inclusion in automatic accumulator resources
   module Resource
     include ChefAutoAccumulator::Config::File
     include ChefAutoAccumulator::Config::Path
@@ -33,6 +34,7 @@ module ChefAutoAccumulator
     include ChefAutoAccumulator::Resource::PropertyTranslation
     include ChefAutoAccumulator::Utils
 
+    # List of properties to skip for all resources
     GLOBAL_CONFIG_PROPERTIES_SKIP = %i(
       config_directory
       config_file
@@ -218,7 +220,8 @@ module ChefAutoAccumulator
 
     # Initialise a path for a configuration file template resources variables
     #
-    # @param *path [String, Symbol, Array<String>, Array<Symbol>] The path to initialise
+    # @param action [Symbol] The configuration action being performed
+    # @param path [String, Symbol, Array<String>, Array<Symbol>] The path to initialise
     # @return [Hash, Array] The initialised config container object
     #
     def accumulator_config_path_init(action, *path)

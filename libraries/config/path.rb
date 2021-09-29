@@ -21,6 +21,7 @@ require_relative '../resource/options'
 
 module ChefAutoAccumulator
   module Config
+    # Accumulated config path access
     module Path
       private
 

@@ -26,11 +26,17 @@ require_relative 'file/toml'
 require_relative 'file/yaml'
 
 module ChefAutoAccumulator
+  # On disk configuration file properties and access
   module File
     include ChefAutoAccumulator::Utils
 
+    # Supported file types
     SUPPORTED_TYPES = %i(INI JSON JSONC TOML YAML).freeze
 
+    # Get the specified file type from the resource options
+    #
+    # @return [Symbol] The configured file type
+    #
     def config_file_type
       type = option_config_file_type
       raise ArgumentError, "Unsupported file type #{debug_var_output(type)}" unless SUPPORTED_TYPES.include?(type)
@@ -39,6 +45,10 @@ module ChefAutoAccumulator
       type
     end
 
+    # Get the default template for the file type
+    #
+    # @return [String] Template file name
+    #
     def config_file_template_default
       template = case config_file_type
                  when :JSON
@@ -56,6 +66,7 @@ module ChefAutoAccumulator
     # Load a file from disk
     #
     # @param file [String] The file to load
+    # @param type [Symbol] The file type to load
     # @return [Hash] File contents
     #
     def load_file(file, type = config_file_type)
@@ -64,9 +75,10 @@ module ChefAutoAccumulator
       ChefAutoAccumulator::File.const_get(type).send(:load_file, file)
     end
 
-    # Create an INI file output as a String from a Hash
+    # Save a file to disk
     #
-    # @param content [Hash] The file contents as a Hash
+    # @param file [String] The file path on disk to save
+    # @param type [Symbol] The file type to save
     # @return [String] Formatted output
     #
     def save_file(file, type = config_file_type)

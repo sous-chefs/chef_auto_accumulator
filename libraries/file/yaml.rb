@@ -22,6 +22,7 @@ require_relative '../_utils'
 
 module ChefAutoAccumulator
   module File
+    # Yaml file type read and write
     module YAML
       include ChefAutoAccumulator::Utils
 

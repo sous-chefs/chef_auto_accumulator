@@ -22,6 +22,7 @@ require_relative '../_utils'
 
 module ChefAutoAccumulator
   module File
+    # Ini file type read and write
     module INI
       include ChefAutoAccumulator::Utils
 
