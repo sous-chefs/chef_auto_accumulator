@@ -71,7 +71,27 @@ module ChefAutoAccumulator
         return if nil_or_empty?(config)
 
         Chef::Log.debug("load_config_file_section_item: Filtering on #{debug_var_output(translate_property_value(option_config_path_match_key))} | #{debug_var_output(option_config_path_match_value)}")
-        item = config.select { |cs| cs[translate_property_value(option_config_path_match_key)].eql?(option_config_path_match_value) }.uniq
+
+        item = if accumulator_config_path_contained_nested?
+                 filter_tuple = option_config_path_match_key.zip(option_config_path_match_value, option_config_path_contained_key.slice(0...-1))
+                 Chef::Log.debug("load_config_file_section_item: Zipped pairs #{debug_var_output(filter_tuple)}")
+
+                 search_object = config
+                 Chef::Log.debug("load_config_file_section_item: Initial search path set to #{debug_var_output(search_object)}")
+
+                 while (k, v, ck = filter_tuple.shift)
+                   Chef::Log.debug("load_config_file_section_item: Filtering for #{k}, #{v} and #{ck}")
+                   search_object = search_object.select { |cs| cs[translate_property_value(k)].eql?(v) }.uniq
+                   search_object = search_object.first.fetch(ck) if ck
+                   Chef::Log.debug("load_config_file_section_item: Search path set to #{debug_var_output(search_object)} for #{k}, #{v} and #{ck}")
+                 end
+
+                 Chef::Log.debug("load_config_file_section_item: Resultant path #{debug_var_output(search_object)}")
+                 search_object
+               else
+                 config.select { |cs| cs[translate_property_value(option_config_path_match_key)].eql?(option_config_path_match_value) }.uniq
+               end
+
         Chef::Log.debug("load_config_file_section_item: Items #{debug_var_output(item)}")
         raise unless item.one? || item.empty?
         item = item.first
@@ -90,7 +110,8 @@ module ChefAutoAccumulator
         config = load_config_file_section_item(config_file)
         return if nil_or_empty?(config)
 
-        outer_key_config = config.fetch(option_config_path_contained_key, nil)
+        ck = accumulator_config_path_contained_nested? ? option_config_path_contained_key.last : option_config_path_contained_key
+        outer_key_config = config.fetch(ck, nil)
         return if nil_or_empty?(outer_key_config)
 
         Chef::Log.debug("load_config_file_section_contained_item: Filtering on #{debug_var_output(translate_property_value(option_config_match_key))} | #{debug_var_output(option_config_match_value)}")

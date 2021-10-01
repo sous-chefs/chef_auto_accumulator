@@ -64,16 +64,16 @@ load_current_value do |new_resource|
   end
 
   current_config = case option_config_path_type
-                   when :hash
-                     load_config_file_section(new_resource.config_file)
-                   when :hash_contained
-                     section = load_config_file_section(new_resource.config_file)
-                     section.fetch(option_config_path_contained_key, nil) if section.is_a?(Hash)
-                   when :array
-                     load_config_file_section_item(new_resource.config_file)
-                   when :array_contained
-                     load_config_file_section_contained_item(new_resource.config_file)
-                   end
+                    when :hash
+                      load_config_file_section(new_resource.config_file)
+                    when :hash_contained
+                      section = load_config_file_section(new_resource.config_file)
+                      section.fetch(option_config_path_contained_key, nil) if section.is_a?(Hash)
+                    when :array
+                      load_config_file_section_item(new_resource.config_file)
+                    when :array_contained
+                      load_config_file_section_contained_item(new_resource.config_file)
+                    end
 
   current_value_does_not_exist! if nil_or_empty?(current_config)
 
@@ -134,7 +134,8 @@ action :create do
         [translate_property_value(rp), new_resource.send(rp)]
       end.compact.to_h
 
-      accumulator_config(action: :key_push, key: option_config_path_contained_key, value: map)
+      ck = accumulator_config_path_contained_nested? ? option_config_path_contained_key.last : option_config_path_contained_key
+      accumulator_config(action: :key_push, key: ck, value: map)
     when :hash
       resource_properties.each do |rp|
         next if nil_or_empty?(new_resource.send(rp))
@@ -181,5 +182,11 @@ action :delete do
     converge_by("Deleting configuration for #{diff_properties.join(', ')}") do
       diff_properties.each { |rp| accumulator_config(action: :delete, key: rp) }
     end unless diff_properties.empty?
+  when :hash_contained
+    converge_by("Deleting configuration for #{new_resource.declared_type.to_s} #{new_resource.name}") do
+      accumulator_config(action: :delete, key: option_config_path_contained_key)
+    end if accumulator_config_present?
+  else
+    raise "Unknown config path type #{debug_var_output(option_config_path_type)}"
   end
 end

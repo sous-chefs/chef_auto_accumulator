@@ -62,5 +62,37 @@ module ChefAutoAccumulator
 
       output
     end
+
+    # Test an object against multiple Classes to see if it is an instance of any of them
+    #
+    # @param object [Any] Object to test
+    # @param classes [Class] Class(es) to test against
+    # @return [true, false] Test result
+    #
+    def multi_is_a?(object, *classes)
+      classes.any? { |c| object.is_a?(c) }
+    end
+
+    # Return whether a provided configuration path is contained and nested within multiple levels
+    #
+    # A contained nested item exists when multiple levels of configuration must be searched to find
+    # the path of the item that are performing a CRUD operation upon.
+    #
+    # { top_level => { first_search_item => { second_search_item => { config_item => config_item_value } } } }
+    #
+    # @return [true, false]
+    #
+    def accumulator_config_path_contained_nested?
+      path_tuple = [ option_config_path_match_key, option_config_path_match_value, option_config_path_contained_key ]
+
+      return false unless path_tuple.any? { |v| v.is_a?(Array) }
+
+      raise ResourceOptionMalformedError,
+            'Contained nested configuration items require Search Item, Search and Contained Key to be specified as an Array' unless path_tuple.all? { |v| v.is_a?(Array) }
+
+      true
+    rescue ArgumentError
+      false
+    end
   end
 end
