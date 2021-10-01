@@ -30,7 +30,7 @@ module ChefAutoAccumulator
       # @return [String, Array<String>] Default configuration path for resource
       #
       def resource_default_config_path
-        type_string = instance_variable_defined?(:@new_resource) ? new_resource.declared_type.to_s : resource_name.to_s
+        type_string = resource_type_name
         strip_regex = if option_config_base_path
                         Regexp.new(option_config_base_path)
                       else

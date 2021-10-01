@@ -48,6 +48,10 @@ module ChefAutoAccumulator
       instance_variable_defined?(:@new_resource)
     end
 
+    def resource_type_name
+      instance_variable_defined?(:@new_resource) ? new_resource.declared_type.to_s : resource_name.to_s
+    end
+
     # Return the formatted class name and value (if not Nil) of a variable for debug output
     #
     # @return [String] The formatted debug output
@@ -91,7 +95,7 @@ module ChefAutoAccumulator
             'Contained nested configuration items require Search Item, Search and Contained Key to be specified as an Array' unless path_tuple.all? { |v| v.is_a?(Array) }
 
       true
-    rescue ArgumentError
+    rescue ChefAutoAccumulator::Resource::Options::ResourceOptionNotDefinedError
       false
     end
   end
