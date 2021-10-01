@@ -48,6 +48,10 @@ module ChefAutoAccumulator
       instance_variable_defined?(:@new_resource)
     end
 
+    # Return the resource declared type name
+    #
+    # @return [String]
+    #
     def resource_type_name
       instance_variable_defined?(:@new_resource) ? new_resource.declared_type.to_s : resource_name.to_s
     end

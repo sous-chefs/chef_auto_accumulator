@@ -224,6 +224,7 @@ module ChefAutoAccumulator
         options
       end
 
+      # Error to raise when attemping to retrieve an option that is not defined on the resource
       class ResourceOptionNotDefinedError < BaseError
         include ChefAutoAccumulator::Utils
 
@@ -232,6 +233,7 @@ module ChefAutoAccumulator
         end
       end
 
+      # Error to raise when an incorrect type is returning when retrieving an option value
       class ResourceOptionMalformedError < BaseError
         include ChefAutoAccumulator::Utils
 

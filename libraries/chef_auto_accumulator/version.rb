@@ -21,5 +21,6 @@ module ChefAutoAccumulator
   cookbook_metadata = Chef::Cookbook::Metadata.new
   cookbook_metadata.from_file("#{__dir__.gsub('libraries/chef_auto_accumulator', '')}/metadata.rb")
 
+  # Library version, taken from the cookbook metadata
   VERSION = cookbook_metadata.version.dup.freeze
 end
