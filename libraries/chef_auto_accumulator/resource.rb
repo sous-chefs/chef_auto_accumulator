@@ -252,7 +252,7 @@ module ChefAutoAccumulator
       existing_path = config_file_template_content.dig(*path)
       return existing_path if existing_path.is_a?(Array) || existing_path.is_a?(Hash)
 
-      Chef::Log.warn("accumulator_config_path_init: Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
+      Chef::Log.info("accumulator_config_path_init: Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
       config_path = config_file_template_content
       path.each do |l|
         config_path[l] ||= if %i(array_push array_delete key_push key_delete).include?(action) && l.eql?(path.last)
