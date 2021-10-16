@@ -158,7 +158,7 @@ module ChefAutoAccumulator
                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
               end
 
-      Chef::Log.warn("accumulator_config_array_index: Result #{debug_var_output(index)}")
+      Chef::Log.debug("accumulator_config_array_index: Result #{debug_var_output(index)}")
 
       index
     end
@@ -169,7 +169,7 @@ module ChefAutoAccumulator
     #
     def accumulator_config_array_present?
       result = !accumulator_config_array_index.nil?
-      Chef::Log.warn("accumulator_config_array_present?: Result #{debug_var_output(result)}")
+      Chef::Log.debug("accumulator_config_array_present?: Result #{debug_var_output(result)}")
 
       result
     end
