@@ -37,6 +37,8 @@ module ChefAutoAccumulator
         return unless ::File.exist?(file)
 
         ::JSON.load_file(file)
+      rescue ::JSON::ParserError
+        {}
       end
 
       # Create a JSON file output as a String from a Hash
