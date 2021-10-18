@@ -51,7 +51,7 @@ module ChefAutoAccumulator
         global_settings = content_compact.delete('global')
 
         content_compact.deep_sort! if sort
-        content_compact.delete_if { |_, v| nil_or_empty?(v) }
+        content_compact.delete_if(&HASH_DEEP_CLEAN)
 
         ::IniFile.new(content: { 'global' => global_settings }.merge(content_compact)).to_s.gsub("[global]\n", '')
       end

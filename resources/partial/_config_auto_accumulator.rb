@@ -58,22 +58,22 @@ property :extra_options, Hash,
           coerce: proc { |p| p.transform_keys(&:to_s) }
 
 load_current_value do |new_resource|
-  if resource_properties.all? { |rp| nil_or_empty?(new_resource.send(rp)) }
+  if resource_properties.all? { |rp| new_resource.send(rp).nil? }
     Chef::Log.warn('No properties are set, skipping load_current_value. Should this resource exist?')
     return
   end
 
   current_config = case option_config_path_type
-                    when :hash
-                      load_config_file_section(new_resource.config_file)
-                    when :hash_contained
-                      section = load_config_file_section(new_resource.config_file)
-                      section.fetch(option_config_path_contained_key, nil) if section.is_a?(Hash)
-                    when :array
-                      load_config_file_section_item(new_resource.config_file)
-                    when :array_contained
-                      load_config_file_section_contained_item(new_resource.config_file)
-                    end
+                   when :hash
+                     load_config_file_section(new_resource.config_file)
+                   when :hash_contained
+                     section = load_config_file_section(new_resource.config_file)
+                     section.fetch(option_config_path_contained_key, nil) if section.is_a?(Hash)
+                   when :array
+                     load_config_file_section_item(new_resource.config_file)
+                   when :array_contained
+                     load_config_file_section_contained_item(new_resource.config_file)
+                   end
 
   current_value_does_not_exist! if nil_or_empty?(current_config)
 
@@ -121,7 +121,7 @@ action :create do
     case option_config_path_type
     when :array
       map = resource_properties.map do |rp|
-        next if nil_or_empty?(new_resource.send(rp))
+        next if new_resource.send(rp).nil?
 
         [translate_property_value(rp), new_resource.send(rp)]
       end.compact.to_h
@@ -129,7 +129,7 @@ action :create do
       accumulator_config(action: :array_push, value: map)
     when :array_contained
       map = resource_properties.map do |rp|
-        next if nil_or_empty?(new_resource.send(rp))
+        next if new_resource.send(rp).nil?
 
         [translate_property_value(rp), new_resource.send(rp)]
       end.compact.to_h
@@ -138,7 +138,7 @@ action :create do
       accumulator_config(action: :key_push, key: ck, value: map)
     when :hash
       resource_properties.each do |rp|
-        next if nil_or_empty?(new_resource.send(rp))
+        next if new_resource.send(rp).nil?
 
         accumulator_config(action: :set, key: rp, value: new_resource.send(rp))
       end
@@ -146,7 +146,7 @@ action :create do
       new_resource.extra_options.each { |key, value| accumulator_config(:set, key, value) } if property_is_set?(:extra_options)
     when :hash_contained
       map = resource_properties.map do |rp|
-        next if nil_or_empty?(new_resource.send(rp))
+        next if new_resource.send(rp).nil?
 
         [translate_property_value(rp), new_resource.send(rp)]
       end.compact.to_h

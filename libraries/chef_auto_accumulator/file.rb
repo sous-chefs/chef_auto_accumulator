@@ -28,10 +28,17 @@ require_relative 'file/yaml'
 module ChefAutoAccumulator
   # On disk configuration file properties and access
   module File
-    include ChefAutoAccumulator::Utils
+    extend ChefAutoAccumulator::Utils
 
     # Supported file types
     SUPPORTED_TYPES = %i(INI JSON JSONC TOML YAML).freeze
+
+    # Hash deep clean proc
+    HASH_DEEP_CLEAN = proc do |_, v|
+      v.delete_if(&HASH_DEEP_CLEAN) if v.is_a?(Hash)
+
+      nil_or_empty?(v) && !v.is_a?(String)
+    end
 
     # Get the specified file type from the resource options
     #
