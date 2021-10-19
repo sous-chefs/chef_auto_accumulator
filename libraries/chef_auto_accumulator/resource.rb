@@ -125,13 +125,13 @@ module ChefAutoAccumulator
       when :array_delete_match
         config_path.delete_if { |v| v[translate_property_value(key)].eql?(value) }
       when :delete
-        config_path.delete(translate_property_value(key)) if config_path.key?(translate_property_value(key))
+        config_path.delete(translate_property_value(key)) if accumulator_config_present?(translate_property_value(key))
       else
         raise ArgumentError, "Unsupported accumulator config action #{action}"
       end
     end
 
-    # Get the index for the thing if it exists
+    # Get the index for the configuration item within an Array if it exists
     #
     # @return [Integer, nil]
     #
@@ -163,7 +163,7 @@ module ChefAutoAccumulator
       index
     end
 
-    # Check if a given configuration path contains the configuration for this resource
+    # Check if a given Array configuration path contains the configuration for this resource
     #
     # @return [true, false]
     #
@@ -172,6 +172,14 @@ module ChefAutoAccumulator
       Chef::Log.debug("accumulator_config_array_present?: Result #{debug_var_output(result)}")
 
       result
+    end
+
+    # Check if a given configuration path contains the configuration for this resource
+    #
+    # @return [true, false]
+    #
+    def accumulator_config_present?(key)
+      accumulator_config_path_init(action, *resource_config_path).key?(translate_property_value(key))
     end
 
     # Check if a given configuration file template resource exists
