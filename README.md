@@ -19,4 +19,6 @@ This cookbook has no platform-specific components and should function correctly 
 
 ## Resources
 
+### Partial
+
 - [chef_auto_accumulator__config_auto_accumulator](documentation/partial/chef_auto_accumulator__config_auto_accumulator.md)

@@ -25,7 +25,7 @@ require_relative 'chef_auto_accumulator/config'
 require_relative 'chef_auto_accumulator/file'
 require_relative 'chef_auto_accumulator/resource'
 
-# Base namespace
+# Base namespace to include for automatic accumulator functionality
 module ChefAutoAccumulator
   include ChefAutoAccumulator::Config
   include ChefAutoAccumulator::File
