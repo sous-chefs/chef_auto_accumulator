@@ -60,7 +60,7 @@ module ChefAutoAccumulator
       template = case config_file_type
                  when :JSON
                    'file_bare.erb'
-                 when :INI, :JSONC, :TOML, YAML
+                 when :INI, :JSONC, :TOML, :YAML
                    'file.erb'
                  else
                    raise ArgumentError, "Unsupported file type #{debug_var_output(type)}"
