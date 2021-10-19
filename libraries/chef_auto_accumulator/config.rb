@@ -22,5 +22,8 @@ require_relative 'config/path'
 
 module ChefAutoAccumulator
   # Config base module namespace
-  module Config; end
+  module Config
+    include ChefAutoAccumulator::Config::File
+    include ChefAutoAccumulator::Config::Path
+  end
 end

@@ -24,8 +24,6 @@ module ChefAutoAccumulator
   module File
     # Yaml file type read and write
     module YAML
-      include ChefAutoAccumulator::Utils
-
       extend self
 
       # Load an YAML file from disk

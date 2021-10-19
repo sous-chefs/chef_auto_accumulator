@@ -24,8 +24,6 @@ module ChefAutoAccumulator
   module File
     # Json file type read and write
     module JSON
-      include ChefAutoAccumulator::Utils
-
       extend self
 
       # Load an JSON file from disk

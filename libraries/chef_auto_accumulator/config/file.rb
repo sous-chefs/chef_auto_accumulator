@@ -22,11 +22,8 @@ require_relative '../file'
 
 module ChefAutoAccumulator
   module Config
-    # On disk configuration state access
+    # On disk configuration state access, required for load_current_value support
     module File
-      include ChefAutoAccumulator::File
-      include ChefAutoAccumulator::Utils
-
       private
 
       # Load the on disk configuration file

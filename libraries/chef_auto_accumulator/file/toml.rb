@@ -24,8 +24,6 @@ module ChefAutoAccumulator
   module File
     # Toml file type read and write
     module TOML
-      include ChefAutoAccumulator::Utils
-
       extend self
 
       # Load an TOML file from disk

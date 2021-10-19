@@ -27,12 +27,8 @@ require_relative 'resource/property_translation'
 module ChefAutoAccumulator
   # Module for inclusion in automatic accumulator resources
   module Resource
-    include ChefAutoAccumulator::Config::File
-    include ChefAutoAccumulator::Config::Path
-    include ChefAutoAccumulator::File
     include ChefAutoAccumulator::Resource::Options
     include ChefAutoAccumulator::Resource::PropertyTranslation
-    include ChefAutoAccumulator::Utils
 
     # List of properties to skip for all resources
     GLOBAL_CONFIG_PROPERTIES_SKIP = %i(
