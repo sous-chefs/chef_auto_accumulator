@@ -115,7 +115,10 @@ module ChefAutoAccumulator
         item = outer_key_config.select { |ci| ci[translate_property_value(option_config_match_key)].eql?(option_config_match_value) }.uniq
         Chef::Log.debug("load_config_file_section_item: Items #{debug_var_output(item)}")
 
-        raise "Expected either one or none of filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}" unless item.one? || item.empty?
+        unless item.one? || item.empty?
+          Chef::Log.warn("Expected either one or zero filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}")
+          raise Chef::Exceptions::CurrentValueDoesNotExist
+        end
 
         item.first
       end

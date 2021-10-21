@@ -101,23 +101,23 @@ module ChefAutoAccumulator
       when :key_push
         config_path[translate_property_value(key)] ||= []
 
-        unless config_path[translate_property_value(key)].include?(value)
-          config_path[translate_property_value(key)].delete_at(accumulator_config_array_index) if accumulator_config_array_present?
+        unless config_path[translate_property_value(key)].include?(value) && accumulator_config_array_index.one?
+          accumulator_config_array_index.each { |i| config_path[translate_property_value(key)].delete_at(i) } if accumulator_config_array_present?
           config_path[translate_property_value(key)].push(value)
         end
       when :key_delete
         config_path[translate_property_value(key)] ||= []
-        config_path[translate_property_value(key)].delete_at(accumulator_config_array_index) if accumulator_config_array_present?
+        accumulator_config_array_index.each { |i| config_path[translate_property_value(key)].delete_at(i) } if accumulator_config_array_present?
       when :key_delete_match
         config_path[translate_property_value(key)] ||= []
         config_path[translate_property_value(key)].delete_if { |v| v[translate_property_value(option_config_match_key)].eql?(option_config_match_value) }
       when :array_push
-        unless config_path.include?(value)
-          config_path.delete_at(accumulator_config_array_index) if accumulator_config_array_present?
+        unless config_path.include?(value) && accumulator_config_array_index.one?
+          accumulator_config_array_index.each { |i| config_path.delete_at(i) } if accumulator_config_array_present?
           config_path.push(value)
         end
       when :array_delete
-        config_path[translate_property_value(key)].delete_at(accumulator_config_array_index) if accumulator_config_array_present?
+        accumulator_config_array_index.each { |i| config_path[translate_property_value(key)].delete_at(i) } if accumulator_config_array_present?
       when :array_delete_match
         config_path.delete_if { |v| v[translate_property_value(key)].eql?(value) }
       when :delete
@@ -140,7 +140,8 @@ module ChefAutoAccumulator
 
                 Chef::Log.debug("accumulator_config_array_present?: Testing :array for #{debug_var_output(key)} | #{debug_var_output(value)}")
 
-                accumulator_config_path_init(action, *path).find_index { |v| v[translate_property_value(key)].eql?(value) }
+                array_path = accumulator_config_path_init(action, *path)
+                array_path.each_index.select { |i| array_path[i][translate_property_value(key)].eql?(value) }
               when :array_contained
                 key = translate_property_value(option_config_match_key)
                 value = option_config_match_value
@@ -148,11 +149,13 @@ module ChefAutoAccumulator
 
                 Chef::Log.debug("accumulator_config_array_present?: Testing :contained_array #{debug_var_output(ck)} for #{debug_var_output(key)} | #{debug_var_output(value)}")
 
-                accumulator_config_containing_path_init(action: action, path: path).fetch(ck, []).find_index { |v| v[key].eql?(value) }
+                array_cpath = accumulator_config_containing_path_init(action: action, path: path).fetch(ck, [])
+                array_cpath.each_index.select { |i| array_cpath[i][key].eql?(value) }
               else
                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
               end
 
+      index.reverse! # We need the indexes in reverse order so we delete correctly, otherwise the shift will result in left over objects we wanted to delete
       Chef::Log.debug("accumulator_config_array_index: Result #{debug_var_output(index)}")
 
       index
