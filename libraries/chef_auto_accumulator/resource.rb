@@ -148,8 +148,7 @@ module ChefAutoAccumulator
 
                 Chef::Log.debug("accumulator_config_array_present?: Testing :contained_array #{debug_var_output(ck)} for #{debug_var_output(key)} | #{debug_var_output(value)}")
 
-                config = accumulator_config_containing_path_init(action: action, path: path).fetch(ck, [])
-                config.find_index { |v| v[key].eql?(value) }
+                accumulator_config_containing_path_init(action: action, path: path).fetch(ck, []).find_index { |v| v[key].eql?(value) }
               else
                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
               end
