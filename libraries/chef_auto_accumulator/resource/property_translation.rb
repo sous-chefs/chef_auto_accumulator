@@ -32,14 +32,21 @@ module ChefAutoAccumulator
       #
       def translate_property_key(value)
         return unless value
-        return option_property_translation_matrix.key(value) if option_property_translation_matrix &&
-                                                                option_property_translation_matrix.value?(value)
+        Chef::Log.trace("translate_property_key: Original value: #{value}")
 
-        if option_property_name_gsub
-          value.to_s.gsub(*option_property_name_gsub.reverse)
-        else
-          value.to_s
-        end
+        result = if option_property_translation_matrix && option_property_translation_matrix.value?(value)
+                   translated_value = option_property_translation_matrix.key(value)
+                   Chef::Log.debug("translate_property_key: Translating #{value} -> #{translated_value}")
+
+                   translated_value
+                 else
+                   value
+                 end.dup.to_s
+
+        result.gsub!(*option_property_name_gsub.reverse) if option_property_name_gsub
+        Chef::Log.trace("translate_property_key: Resultant value: #{result}")
+
+        result
       end
 
       # Check if a resource property translation alias is defined and return the translated config property name
@@ -49,14 +56,21 @@ module ChefAutoAccumulator
       #
       def translate_property_value(key)
         return unless key
-        return option_property_translation_matrix.fetch(key) if option_property_translation_matrix &&
-                                                                option_property_translation_matrix.key?(key)
+        Chef::Log.trace("translate_property_value: Original key: #{key}")
 
-        if option_property_name_gsub
-          key.to_s.gsub(*option_property_name_gsub)
-        else
-          key.to_s
-        end
+        result = if option_property_translation_matrix && option_property_translation_matrix.key?(key)
+                   translated_key = option_property_translation_matrix.fetch(key)
+                   Chef::Log.debug("translate_property_value: Translating #{key} -> #{translated_key}")
+
+                   translated_key
+                 else
+                   key
+                 end.dup.to_s
+
+        result.gsub!(*option_property_name_gsub) if option_property_name_gsub
+        Chef::Log.trace("translate_property_value: Resultant key: #{result}")
+
+        result
       end
     end
   end
