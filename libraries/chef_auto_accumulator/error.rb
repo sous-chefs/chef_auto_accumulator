@@ -1,6 +1,6 @@
 #
 # Cookbook:: chef_auto_accumulator
-# Library:: _base
+# Library:: error
 #
 # Copyright:: Ben Hughes <bmhughes@bmhughes.co.uk>
 #
@@ -21,4 +21,16 @@
 module ChefAutoAccumulator
   # Base error class
   class BaseError < StandardError; end
+
+  class FilterError < BaseError
+    include ChefAutoAccumulator::Utils
+
+    def initialize(fkey, fvalue, path, result)
+      super([
+        "Failed to filter a single value for key #{debug_var_output(fkey)} and value #{debug_var_output(fvalue)}.",
+        "Result: #{result.count} #{debug_var_output(result)}",
+        "Path: #{debug_var_output(path)}",
+      ].join("\n\n"))
+    end
+  end
 end

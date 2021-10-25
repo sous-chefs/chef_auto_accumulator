@@ -18,8 +18,8 @@
 #
 
 require_relative 'chef_auto_accumulator/version'
-require_relative 'chef_auto_accumulator/_base'
 require_relative 'chef_auto_accumulator/_utils'
+require_relative 'chef_auto_accumulator/error'
 
 require_relative 'chef_auto_accumulator/config'
 require_relative 'chef_auto_accumulator/file'

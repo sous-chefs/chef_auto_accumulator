@@ -81,12 +81,6 @@ module ChefAutoAccumulator
                    Chef::Log.debug("load_config_file_section_item: Filtering for #{debug_var_output(k)} | #{debug_var_output(v)} | #{debug_var_output(ck)}")
                    search_object = search_object.select { |cs| cs[translate_property_value(k)].eql?(v) }.uniq
                    search_object = search_object.first.fetch(ck, nil) if ck
-
-                   if search_object.nil?
-                     Chef::Log.debug("load_config_file_section_item: Key #{debug_var_output(ck)} does not exist, exiting")
-                     break
-                   end
-
                    Chef::Log.debug("load_config_file_section_item: Search path set to #{debug_var_output(search_object)} for #{k}, #{v} and #{ck}")
                  end
 
@@ -97,7 +91,6 @@ module ChefAutoAccumulator
                end
 
         Chef::Log.debug("load_config_file_section_item: Filtered items #{debug_var_output(item)}")
-        return if item.nil?
 
         raise unless item.one? || item.empty?
         item = item.first
@@ -105,6 +98,8 @@ module ChefAutoAccumulator
         Chef::Log.debug("load_config_file_section_item: #{config_file} match key #{debug_var_output(option_config_path_match_key)} value #{debug_var_output(option_config_path_match_value)}. Result #{debug_var_output(item)}")
 
         item
+      rescue KeyError
+        nil
       end
 
       # Load a contained configuration item from a section on disk, the first match is returned
@@ -126,7 +121,7 @@ module ChefAutoAccumulator
         Chef::Log.debug("load_config_file_section_contained_item: Filtering against K/V pairs #{debug_var_output(match)}")
 
         item = outer_key_config.filter { |object| match.any? { |k, v| kv_test_log(object, k, v) } }
-        Chef::Log.warn("load_config_file_section_item: Filtered items #{debug_var_output(item)}")
+        Chef::Log.debug("load_config_file_section_contained_item: Filtered items #{debug_var_output(item)}")
 
         return if nil_or_empty?(item)
 
@@ -139,6 +134,9 @@ module ChefAutoAccumulator
 
         item.first
       end
+
+      # Error to raise when failing to filter a single containing resource from a parent path
+      class FileConfigPathFilterError < FilterError; end
     end
   end
 end

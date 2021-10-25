@@ -94,7 +94,7 @@ module ChefAutoAccumulator
 
       Chef::Log.trace("kv_test_log: Testing key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}")
       result = object.fetch(key, nil).eql?(value)
-      Chef::Log.warn("kv_test_log: Matched key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}") if result
+      Chef::Log.debug("kv_test_log: Matched key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}") if result
 
       result
     end

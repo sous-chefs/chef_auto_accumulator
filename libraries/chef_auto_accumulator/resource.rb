@@ -316,6 +316,8 @@ module ChefAutoAccumulator
         # Find the object that matches the filter
         accumulator_config_path_filter(parent_path, filter_key, filter_value)
       end
+    rescue KeyError => e
+      raise e, "Could not find containing key #{debug_var_output(ck)}, does the containing configuration resource exist?"
     end
 
     # Filter a configuration item object collection by a key value pair
@@ -347,16 +349,6 @@ module ChefAutoAccumulator
     end
 
     # Error to raise when failing to filter a single containing resource from a parent path
-    class AccumlatorConfigPathFilterError < BaseError
-      include ChefAutoAccumulator::Utils
-
-      def initialize(fkey, fvalue, path, result)
-        super([
-          "Failed to filter a single value for key #{debug_var_output(fkey)} and value #{debug_var_output(fvalue)}.",
-          "Result: #{result.count} #{debug_var_output(result)}",
-          "Path: #{debug_var_output(path)}",
-        ].join("\n\n"))
-      end
-    end
+    class AccumlatorConfigPathFilterError < FilterError; end
   end
 end
