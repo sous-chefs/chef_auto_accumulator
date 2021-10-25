@@ -49,7 +49,7 @@ module ChefAutoAccumulator
 
         content_compact = content.dup.compact
         content_compact.deep_sort! if sort
-        content_compact.delete_if(&HASH_DEEP_CLEAN)
+        content_compact.delete_if(&ENUM_DEEP_CLEAN)
 
         ::JSON.pretty_generate(content_compact)
       end
