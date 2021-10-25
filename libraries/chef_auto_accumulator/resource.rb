@@ -327,11 +327,10 @@ module ChefAutoAccumulator
       raise "The contained parent path should respond to :filter, class #{path.class} does not" unless path.respond_to?(:filter)
 
       Chef::Log.debug("accumulator_config_path_filter: Filtering #{debug_var_output(path)} on #{debug_var_output(filter_key)} | #{debug_var_output(filter_value)}")
-
       filtered_object = path.filter { |v| v[filter_key].eql?(filter_value) }
 
       Chef::Log.debug("accumulator_config_path_filter: Got filtered value #{debug_var_output(filtered_object)}")
-      raise "Expected a single filtered object, got #{filtered_object.count}. #{debug_var_output(filtered_object)}" unless filtered_object.one?
+      raise AccumlatorConfigPathFilterError.new(filter_key, filter_value, path, filtered_object) unless filtered_object.one?
 
       filtered_object.first
     end
@@ -343,6 +342,19 @@ module ChefAutoAccumulator
     def config_file_template_content
       init_config_template unless config_template_exist?
       find_resource!(:template, new_resource.config_file).variables[:content]
+    end
+
+    # Error to raise when failing to filter a single containing resource from a parent path
+    class AccumlatorConfigPathFilterError < BaseError
+      include ChefAutoAccumulator::Utils
+
+      def initialize(fkey, fvalue, path, result)
+        super([
+          "Failed to filter a single value for key #{debug_var_output(fkey)} and value #{debug_var_output(fvalue)}.",
+          "Result: #{result.count} #{debug_var_output(result)}",
+          "Path: #{debug_var_output(path)}",
+        ].join("\n\n"))
+      end
     end
   end
 end
