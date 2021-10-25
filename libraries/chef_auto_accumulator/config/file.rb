@@ -78,9 +78,15 @@ module ChefAutoAccumulator
                  Chef::Log.debug("load_config_file_section_item: Initial search path set to #{debug_var_output(search_object)}")
 
                  while (k, v, ck = filter_tuple.shift)
-                   Chef::Log.debug("load_config_file_section_item: Filtering for #{k}, #{v} and #{ck}")
+                   Chef::Log.debug("load_config_file_section_item: Filtering for #{debug_var_output(k)} | #{debug_var_output(v)} | #{debug_var_output(ck)}")
                    search_object = search_object.select { |cs| cs[translate_property_value(k)].eql?(v) }.uniq
-                   search_object = search_object.first.fetch(ck) if ck
+                   search_object = search_object.first.fetch(ck, nil) if ck
+
+                   if search_object.nil?
+                     Chef::Log.debug("load_config_file_section_item: Key #{debug_var_output(ck)} does not exist, exiting")
+                     break
+                   end
+
                    Chef::Log.debug("load_config_file_section_item: Search path set to #{debug_var_output(search_object)} for #{k}, #{v} and #{ck}")
                  end
 
@@ -90,7 +96,9 @@ module ChefAutoAccumulator
                  config.select { |cs| cs[translate_property_value(option_config_path_match_key)].eql?(option_config_path_match_value) }.uniq
                end
 
-        Chef::Log.warn("load_config_file_section_item: Items #{debug_var_output(item)}")
+        Chef::Log.debug("load_config_file_section_item: Filtered items #{debug_var_output(item)}")
+        return if item.nil?
+
         raise unless item.one? || item.empty?
         item = item.first
 
