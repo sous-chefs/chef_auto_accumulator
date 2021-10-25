@@ -112,8 +112,10 @@ module ChefAutoAccumulator
         outer_key_config = config.fetch(ck, nil)
         return if nil_or_empty?(outer_key_config)
 
-        Chef::Log.debug("load_config_file_section_contained_item: Filtering on #{debug_var_output(translate_property_value(option_config_match_key))} | #{debug_var_output(option_config_match_value)}")
-        item = outer_key_config.select { |ci| ci[translate_property_value(option_config_match_key)].eql?(option_config_match_value) }.uniq
+        match_key_name = translate_property_value(option_config_match_key)
+        Chef::Log.debug("load_config_file_section_contained_item: Filtering on #{debug_var_output(match_key_name)} | #{debug_var_output(option_config_match_value)}")
+
+        item = outer_key_config.select { |ci| ci[match_key_name].eql?(option_config_match_value) }.uniq
         Chef::Log.debug("load_config_file_section_item: Items #{debug_var_output(item)}")
 
         unless item.one? || item.empty?
