@@ -17,12 +17,14 @@
 # limitations under the License.
 #
 
+require_relative 'config/accumulator'
 require_relative 'config/file'
 require_relative 'config/path'
 
 module ChefAutoAccumulator
   # Config base module namespace
   module Config
+    include ChefAutoAccumulator::Config::Accumulator
     include ChefAutoAccumulator::Config::File
     include ChefAutoAccumulator::Config::Path
   end

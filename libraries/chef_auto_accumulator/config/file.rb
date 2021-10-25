@@ -108,7 +108,7 @@ module ChefAutoAccumulator
         config = load_config_file_section_item(config_file)
         return if nil_or_empty?(config)
 
-        ck = accumulator_config_path_contained_nested? ? option_config_path_contained_key.last : option_config_path_contained_key
+        ck = accumulator_config_path_containing_key
         outer_key_config = config.fetch(ck, nil)
         return if nil_or_empty?(outer_key_config)
 
@@ -117,7 +117,7 @@ module ChefAutoAccumulator
         match.transform_keys! { |k| translate_property_value(k) }
         Chef::Log.debug("load_config_file_section_contained_item: Filtering against K/V pairs #{debug_var_output(match)}")
 
-        item = outer_key_config.filter { |okcv| match.any? { |k, v| okcv[k].eql?(v) } }
+        item = outer_key_config.filter { |object| match.any? { |k, v| kv_test_log(object, k, v) } }
         Chef::Log.warn("load_config_file_section_item: Filtered items #{debug_var_output(item)}")
 
         return if nil_or_empty?(item)

@@ -32,6 +32,7 @@ module ChefAutoAccumulator
 
     # Check if a given gem is installed and available for require
     #
+    # @param gem_name [String] Gem name to check
     # @return [true, false] Gem installed result
     #
     def gem_installed?(gem_name)
@@ -81,26 +82,21 @@ module ChefAutoAccumulator
       classes.any? { |c| object.is_a?(c) }
     end
 
-    # Return whether a provided configuration path is contained and nested within multiple levels
+    # Test a key value pair for an object with logging output on match
     #
-    # A contained nested item exists when multiple levels of configuration must be searched to find
-    # the path of the item that are performing a CRUD operation upon.
-    #
-    # { top_level => { first_search_item => { second_search_item => { config_item => config_item_value } } } }
-    #
+    # @param object [Hash] Object to check
+    # @param key [String, Symbol] Key to fetch and test
+    # @param value [Any] Value to test against
     # @return [true, false]
     #
-    def accumulator_config_path_contained_nested?
-      path_tuple = [ option_config_path_match_key, option_config_path_match_value, option_config_path_contained_key ]
+    def kv_test_log(object, key, value)
+      raise ArgumentError, "Object #{debug_var_output(object)} does not respond to :fetch" unless object.respond_to?(:fetch)
 
-      return false unless path_tuple.any? { |v| v.is_a?(Array) }
+      Chef::Log.trace("kv_test_log: Testing key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}")
+      result = object.fetch(key, nil).eql?(value)
+      Chef::Log.warn("kv_test_log: Matched key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}") if result
 
-      raise ResourceOptionMalformedError,
-            'Contained nested configuration items require Search Item, Search and Contained Key to be specified as an Array' unless path_tuple.all? { |v| v.is_a?(Array) }
-
-      true
-    rescue ChefAutoAccumulator::Resource::Options::ResourceOptionNotDefinedError
-      false
+      result
     end
   end
 end

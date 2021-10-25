@@ -134,7 +134,7 @@ action :create do
         [translate_property_value(rp), new_resource.send(rp)]
       end.compact.to_h
 
-      ck = accumulator_config_path_contained_nested? ? option_config_path_contained_key.last : option_config_path_contained_key
+      ck = accumulator_config_path_containing_key
       accumulator_config(action: :key_push, key: ck, value: map)
     when :hash
       resource_properties.each do |rp|

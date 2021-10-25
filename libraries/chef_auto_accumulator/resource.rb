@@ -145,16 +145,14 @@ module ChefAutoAccumulator
                 array_path = accumulator_config_path_init(action, *path)
                 array_path.each_index.select { |i| array_path[i][translate_property_value(key)].eql?(value) }
               when :array_contained
-                # key = translate_property_value(option_config_match_key)
-                # value = option_config_match_value
                 match = option_config_match
                 match.transform_keys! { |k| translate_property_value(k) }
-                ck = accumulator_config_path_contained_nested? ? option_config_path_contained_key.last : option_config_path_contained_key
+                ck = accumulator_config_path_containing_key
 
                 Chef::Log.warn("accumulator_config_array_index: Searching :contained_array #{debug_var_output(ck)} against #{debug_var_output(match)}")
 
                 array_cpath = accumulator_config_containing_path_init(action: action, path: path).fetch(ck, [])
-                array_cpath.each_index.select { |i| match.any? { |k, v| array_cpath[i][k].eql?(v) } }
+                array_cpath.each_index.select { |i| match.any? { |k, v| kv_test_log(array_cpath[i], k, v) } }
               else
                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
               end
