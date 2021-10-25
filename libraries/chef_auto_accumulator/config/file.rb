@@ -90,7 +90,7 @@ module ChefAutoAccumulator
                  config.select { |cs| cs[translate_property_value(option_config_path_match_key)].eql?(option_config_path_match_value) }.uniq
                end
 
-        Chef::Log.debug("load_config_file_section_item: Items #{debug_var_output(item)}")
+        Chef::Log.warn("load_config_file_section_item: Items #{debug_var_output(item)}")
         raise unless item.one? || item.empty?
         item = item.first
 
@@ -112,14 +112,20 @@ module ChefAutoAccumulator
         outer_key_config = config.fetch(ck, nil)
         return if nil_or_empty?(outer_key_config)
 
-        match_key_name = translate_property_value(option_config_match_key)
-        Chef::Log.debug("load_config_file_section_contained_item: Filtering on #{debug_var_output(match_key_name)} | #{debug_var_output(option_config_match_value)}")
+        match = option_config_match
+        match.compact!
+        match.transform_keys! { |k| translate_property_value(k) }
+        Chef::Log.debug("load_config_file_section_contained_item: Filtering against K/V pairs #{debug_var_output(match)}")
 
-        item = outer_key_config.select { |ci| ci[match_key_name].eql?(option_config_match_value) }.uniq
-        Chef::Log.debug("load_config_file_section_item: Items #{debug_var_output(item)}")
+        item = outer_key_config.filter { |okcv| match.any? { |k, v| okcv[k].eql?(v) } }
+        Chef::Log.warn("load_config_file_section_item: Filtered items #{debug_var_output(item)}")
+
+        return if nil_or_empty?(item)
 
         unless item.one? || item.empty?
-          Chef::Log.warn("Expected either one or zero filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}")
+          Chef::Log.warn(
+            "load_config_file_section_item: Expected either one or zero filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}"
+          )
           raise Chef::Exceptions::CurrentValueDoesNotExist
         end
 

@@ -122,30 +122,17 @@ module ChefAutoAccumulator
         contained_key
       end
 
-      # Return the key to match the resource configuration against for load_current_value
+      # Return the key/value pairs to match the resource configuration against for load_current_value
       #
-      # @return [Symbol] Path type
+      # @return [Hash] Path match pairs
       #
-      def option_config_match_key
-        match_key = resource_options.fetch(:config_match_key, nil)
-        Chef::Log.trace("option_config_match_key: #{debug_var_output(match_key)}")
+      def option_config_match
+        match = resource_options.fetch(:config_match, nil)
+        Chef::Log.trace("option_config_match: #{debug_var_output(match)}")
 
-        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match_key', match_key) unless match_key
+        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match_key', match) unless match
 
-        match_key
-      end
-
-      # Return the value to match the resource configuration against for load_current_value
-      #
-      # @return [Symbol] Path type
-      #
-      def option_config_match_value
-        match_value = resource_options.fetch(:config_match_value, nil)
-        Chef::Log.trace("option_config_match_value: #{debug_var_output(match_value)}")
-
-        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match_value', match_value) unless match_value
-
-        match_value
+        match
       end
 
       # Return the resource configuration path override (if defined)

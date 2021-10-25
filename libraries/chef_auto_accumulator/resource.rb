@@ -110,7 +110,9 @@ module ChefAutoAccumulator
         accumulator_config_array_index.each { |i| config_path[translate_property_value(key)].delete_at(i) } if accumulator_config_array_present?
       when :key_delete_match
         config_path[translate_property_value(key)] ||= []
-        config_path[translate_property_value(key)].delete_if { |v| v[translate_property_value(option_config_match_key)].eql?(option_config_match_value) }
+        option_config_match.transform_keys { |k| translate_property_value(k) }.each do |k, v|
+          config_path[translate_property_value(key)].delete_if { |kdm| kdm[k].eql?(v) }
+        end
       when :array_push
         unless config_path.include?(value) && accumulator_config_array_index.one?
           accumulator_config_array_index.each { |i| config_path.delete_at(i) } if accumulator_config_array_present?
@@ -138,25 +140,27 @@ module ChefAutoAccumulator
                 key = translate_property_value(option_config_path_match_key)
                 value = option_config_path_match_value
 
-                Chef::Log.debug("accumulator_config_array_present?: Testing :array for #{debug_var_output(key)} | #{debug_var_output(value)}")
+                Chef::Log.debug("accumulator_config_array_index: Testing :array for #{debug_var_output(key)} | #{debug_var_output(value)}")
 
                 array_path = accumulator_config_path_init(action, *path)
                 array_path.each_index.select { |i| array_path[i][translate_property_value(key)].eql?(value) }
               when :array_contained
-                key = translate_property_value(option_config_match_key)
-                value = option_config_match_value
+                # key = translate_property_value(option_config_match_key)
+                # value = option_config_match_value
+                match = option_config_match
+                match.transform_keys! { |k| translate_property_value(k) }
                 ck = accumulator_config_path_contained_nested? ? option_config_path_contained_key.last : option_config_path_contained_key
 
-                Chef::Log.debug("accumulator_config_array_present?: Testing :contained_array #{debug_var_output(ck)} for #{debug_var_output(key)} | #{debug_var_output(value)}")
+                Chef::Log.warn("accumulator_config_array_index: Searching :contained_array #{debug_var_output(ck)} against #{debug_var_output(match)}")
 
                 array_cpath = accumulator_config_containing_path_init(action: action, path: path).fetch(ck, [])
-                array_cpath.each_index.select { |i| array_cpath[i][key].eql?(value) }
+                array_cpath.each_index.select { |i| match.any? { |k, v| array_cpath[i][k].eql?(v) } }
               else
                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
               end
 
       index.reverse! # We need the indexes in reverse order so we delete correctly, otherwise the shift will result in left over objects we wanted to delete
-      Chef::Log.debug("accumulator_config_array_index: Result #{debug_var_output(index)}")
+      Chef::Log.warn("accumulator_config_array_index: Result #{debug_var_output(index)}")
 
       index
     end
