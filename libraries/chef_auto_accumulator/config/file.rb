@@ -35,7 +35,8 @@ module ChefAutoAccumulator
         return unless ::File.exist?(config_file)
 
         config = load_file(config_file)
-        Chef::Log.debug("load_config_file: #{config_file} - #{debug_var_output(config)}")
+        Chef::Log.debug("load_config_file: #{config_file} Count - #{config.count}")
+        Chef::Log.trace("load_config_file: #{config_file} - #{debug_var_output(config)}")
 
         config
       end

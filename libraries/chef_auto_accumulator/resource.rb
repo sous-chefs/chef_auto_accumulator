@@ -54,16 +54,16 @@ module ChefAutoAccumulator
     # @return [Array] list of resource properties
     #
     def resource_properties
-      properties = instance_variable_defined?(:@new_resource) ? new_resource.class.properties(false).keys : self.class.properties(false).keys
-      Chef::Log.debug("resource_properties: Got properties from resource:\n\n\t#{properties.sort.join("\n\t")}\n")
+      properties = action_class? ? new_resource.class.properties(false).keys : self.class.properties(false).keys
+      Chef::Log.trace("resource_properties: Got properties from resource: #{properties.sort.join(', ')}")
       properties.reject! { |p| GLOBAL_CONFIG_PROPERTIES_SKIP.include?(p) }
 
       if option_config_properties_skip
-        Chef::Log.debug("resource_properties: Resourced defined skip properties: #{option_config_properties_skip.join(', ')}")
+        Chef::Log.trace("resource_properties: Resourced defined skip properties: #{option_config_properties_skip.join(', ')}")
         properties.reject! { |p| option_config_properties_skip.include?(p) }
       end
 
-      Chef::Log.info("resource_properties: Filtered properties: #{properties.join(', ')}")
+      Chef::Log.debug("resource_properties: Resultant filtered properties for #{resource_type_name}: #{properties.sort.join(', ')}")
       properties
     end
 
@@ -206,7 +206,7 @@ module ChefAutoAccumulator
 
       config_content = if new_resource.load_existing_config_file
                          existing_config_load = load_config_file(new_resource.config_file) || {}
-                         Chef::Log.info("init_config_template: Existing config load data: [#{existing_config_load.class}] #{existing_config_load}")
+                         Chef::Log.debug("init_config_template: Existing config load data: [#{existing_config_load.class}] #{existing_config_load}")
 
                          existing_config_load
                        else
