@@ -35,11 +35,20 @@ module ChefAutoAccumulator
       def accumulator_config_path_contained_nested?
         path_tuple = [ option_config_path_match_key, option_config_path_match_value, option_config_path_contained_key ]
 
-        return false unless path_tuple.any? { |v| v.is_a?(Array) }
+        unless path_tuple.any? { |v| v.is_a?(Array) }
+          Chef::Log.debug('accumulator_config_path_contained_nested?: Config not nested')
+          return false
+        end
 
-        raise ResourceOptionMalformedError,
-              'Contained nested configuration items require Search Item, Search and Contained Key to be specified as an Array' unless path_tuple.all? { |v| v.is_a?(Array) }
+        # Verify all options are type Array
+        %w(option_config_path_match_key option_config_path_match_value option_config_path_contained_key).each do |opt|
+          opt_val = send(opt.to_sym)
+          next if opt_val.is_a?(Array)
 
+          raise ChefAutoAccumulator::Resource::Options::ResourceOptionMalformedError.new(resource_type_name, opt, opt_val, 'Array')
+        end
+
+        Chef::Log.debug('accumulator_config_path_contained_nested?: Config nested')
         true
       rescue ChefAutoAccumulator::Resource::Options::ResourceOptionNotDefinedError
         false
