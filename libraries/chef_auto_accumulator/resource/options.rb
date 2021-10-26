@@ -130,7 +130,7 @@ module ChefAutoAccumulator
         match = resource_options.fetch(:config_match, nil)
         Chef::Log.trace("option_config_match: #{debug_var_output(match)}")
 
-        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match_key', match) unless match
+        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match', match) unless match
 
         match
       end

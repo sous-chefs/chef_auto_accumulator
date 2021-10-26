@@ -170,7 +170,7 @@ module ChefAutoAccumulator
     # @return [true, false]
     #
     def accumulator_config_array_present?
-      result = !accumulator_config_array_index.nil?
+      result = !nil_or_empty?(accumulator_config_array_index)
       Chef::Log.debug("accumulator_config_array_present?: Result #{debug_var_output(result)}")
 
       result
