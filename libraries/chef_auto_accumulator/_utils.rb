@@ -98,5 +98,13 @@ module ChefAutoAccumulator
 
       result
     end
+
+    # Call Chef::Log to log a message with the calling method appended
+    #
+    # @return [nil]
+    #
+    def log_chef(level, message)
+      Chef::Log.send(level, "#{caller[1][/`.*'/][1..-2]}: #{message}")
+    end
   end
 end
