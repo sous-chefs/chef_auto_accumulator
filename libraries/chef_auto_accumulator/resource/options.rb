@@ -76,8 +76,9 @@ module ChefAutoAccumulator
       #
       def option_config_path_type
         type = resource_options.fetch(:config_path_type, :hash)
-
         Chef::Log.trace("option_config_path_type: #{debug_var_output(type)}")
+
+        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_type', type) unless type
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_type', type, *ALLOWED_PATH_TYPES) unless ALLOWED_PATH_TYPES.include?(type)
 
         type
@@ -91,9 +92,10 @@ module ChefAutoAccumulator
         match_key = resource_options.fetch(:config_path_match_key, nil)
         Chef::Log.trace("option_config_path_match_key: #{debug_var_output(match_key)}")
 
-        raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_match_key', match_key, 'String', 'Symbol') unless multi_is_a?(match_key, String, Symbol, Array)
+        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_key', match_key) unless match_key
+        raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_match_key', match_key, 'String', 'Symbol', 'Array') unless multi_is_a?(match_key, String, Symbol, Array)
 
-        match_key
+        Array(match_key)
       end
 
       # Return the value to match the resource configuration path against
@@ -105,8 +107,9 @@ module ChefAutoAccumulator
         Chef::Log.trace("option_config_path_match_value: #{debug_var_output(match_value)}")
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_value', match_value) unless match_value
+        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_value', match_value) unless match_value
 
-        match_value
+        match_value.is_a?(Array) ? match_value : [ match_value ]
       end
 
       # Return the key to store the contained configuration in on the filtered configuration path object
@@ -118,8 +121,9 @@ module ChefAutoAccumulator
         Chef::Log.trace("option_config_path_contained_key: #{debug_var_output(contained_key)}")
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_contained_key', contained_key) unless contained_key
+        raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_contained_key', contained_key, 'String', 'Symbol', 'Array') unless multi_is_a?(contained_key, String, Symbol, Array)
 
-        contained_key
+        Array(contained_key)
       end
 
       # Return the key/value pairs to match the resource configuration against for load_current_value

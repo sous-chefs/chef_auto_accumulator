@@ -85,45 +85,78 @@ module ChefAutoAccumulator
                       raise ArgumentError, "Unknown config path type #{debug_var_output(option_config_path_type)}"
                     end
 
+      config_key = translate_property_value(key)
+
       log_string = ''
       log_string.concat("Perfoming action #{action} on ")
-      log_string.concat("config key #{debug_var_output(key)}, ") if key
+      log_string.concat("config key #{debug_var_output(config_key)}, ") if key
       log_string.concat("value #{debug_var_output(value)} on ") if value
       log_string.concat("path #{path.map { |p| "['#{p}']" }.join} #{debug_var_output(config_path)}")
       Chef::Log.info(log_string)
 
-      case action
-      when :set
-        config_path[translate_property_value(key)] = value
-      when :append
-        config_path[translate_property_value(key)] ||= ''
-        config_path[translate_property_value(key)].concat(value.to_s)
-      when :key_push
-        config_path[translate_property_value(key)] ||= []
+      # Initialise key if nil
+      if %i(key_push key_delete key_delete_match_self).include?(action) && config_path[config_key].nil?
+        Chef::Log.warn("accumulator_config: Initialising #{debug_var_output(config_key)} as Array for path #{debug_var_output(config_path)}")
+        config_path[config_key] = []
+      end
 
-        unless config_path[translate_property_value(key)].include?(value) && accumulator_config_array_index.one?
-          accumulator_config_array_index.each { |i| config_path[translate_property_value(key)].delete_at(i) } if accumulator_config_array_present?
-          config_path[translate_property_value(key)].push(value)
+      case action
+      ###
+      ## Hash config_path
+      ###
+      when :set
+        # config_path is a Hash
+        config_path[config_key] = value
+      when :delete
+        # config_path is a Hash
+        config_path.delete(config_key) if config_path.key?(config_key)
+      when :append
+        # config_path is a Hash with a String key
+        config_path[config_key] ||= ''
+        config_path[config_key].concat(value.to_s) unless config_path[config_key].match?(value)
+      when :key_push
+        # config_path is an Hash with an Array key
+        if accumulator_config_array_present? && accumulator_config_array_index.one? && value.respond_to?(:merge)
+          # Merge with existing
+          config_path[config_key][accumulator_config_array_index.pop].merge!(value)
+        elsif !accumulator_config_array_present?
+          # Create
+          config_path[config_key].push(value)
+        else
+          # Replace (remove duplicates if present)
+          accumulator_config_array_index.each { |i| config_path[config_key].delete_at(i) }
+          config_path[config_key].push(value)
         end
       when :key_delete
-        config_path[translate_property_value(key)] ||= []
-        accumulator_config_array_index.each { |i| config_path[translate_property_value(key)].delete_at(i) } if accumulator_config_array_present?
-      when :key_delete_match
-        config_path[translate_property_value(key)] ||= []
-        option_config_match.transform_keys { |k| translate_property_value(k) }.each do |k, v|
-          config_path[translate_property_value(key)].delete_if { |kdm| kdm[k].eql?(v) }
-        end
+        # config_path is an Hash with an Array key
+        # Delete matched indexes from key
+        accumulator_config_array_index.each { |i| config_path[config_key].delete_at(i) } if accumulator_config_array_present?
+      when :key_delete_match_self
+        # config_path is an Hash with an Array key
+        # Delete indexes that match the current resource config
+        option_config_match.transform_keys! { |k| translate_property_value(k) }
+        option_config_match.each { |k, v| config_path[config_key].delete_if { |kdm| kdm[k].eql?(v) } }
+      ###
+      ## Array config_path
+      ###
       when :array_push
-        unless config_path.include?(value) && accumulator_config_array_index.one?
-          accumulator_config_array_index.each { |i| config_path.delete_at(i) } if accumulator_config_array_present?
+        # config_path is an Array
+        if accumulator_config_array_present? && accumulator_config_array_index.one? && value.respond_to?(:merge)
+          # Merge with existing
+          object = config_path.delete_at(accumulator_config_array_index.pop)
+          object.merge!(value)
+          config_path.push(object)
+        elsif !accumulator_config_array_present?
+          # Create
+          config_path.push(value)
+        else
+          # Replace (remove duplicates if present)
+          accumulator_config_array_index.each { |i| config_path.delete_at(i) }
           config_path.push(value)
         end
       when :array_delete
-        accumulator_config_array_index.each { |i| config_path[translate_property_value(key)].delete_at(i) } if accumulator_config_array_present?
-      when :array_delete_match
-        config_path.delete_if { |v| v[translate_property_value(key)].eql?(value) }
-      when :delete
-        config_path.delete(translate_property_value(key)) if accumulator_config_present?(translate_property_value(key))
+        # config_path is an Array
+        accumulator_config_array_index.each { |i| config_path.delete_at(i) } if accumulator_config_array_present?
       else
         raise ArgumentError, "Unsupported accumulator config action #{action}"
       end
@@ -134,22 +167,21 @@ module ChefAutoAccumulator
     # @return [Integer, nil]
     #
     def accumulator_config_array_index
+      # Get the path and match config for the resource applying any property translations
       path = resource_config_path
+      match = option_config_match.transform_keys { |k| translate_property_value(k) }
+
+      # Find the Array index for the configuration object that matches the resource definition
       index = case option_config_path_type
               when :array
-                key = translate_property_value(option_config_path_match_key)
-                value = option_config_path_match_value
-
-                Chef::Log.debug("accumulator_config_array_index: Testing :array for #{debug_var_output(key)} | #{debug_var_output(value)}")
+                Chef::Log.debug("accumulator_config_array_index: Testing :array for #{debug_var_output(match)}")
 
                 array_path = accumulator_config_path_init(action, *path)
-                array_path.each_index.select { |i| array_path[i][translate_property_value(key)].eql?(value) }
+                array_path.each_index.select { |i| match.any? { |k, v| kv_test_log(array_path[i], k, v) } }
               when :array_contained
-                match = option_config_match
-                match.transform_keys! { |k| translate_property_value(k) }
                 ck = accumulator_config_path_containing_key
 
-                Chef::Log.warn("accumulator_config_array_index: Searching :contained_array #{debug_var_output(ck)} against #{debug_var_output(match)}")
+                Chef::Log.debug("accumulator_config_array_index: Searching :array_contained #{debug_var_output(ck)} against #{debug_var_output(match)}")
 
                 array_cpath = accumulator_config_containing_path_init(action: action, path: path).fetch(ck, [])
                 array_cpath.each_index.select { |i| match.any? { |k, v| kv_test_log(array_cpath[i], k, v) } }
@@ -157,8 +189,8 @@ module ChefAutoAccumulator
                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
               end
 
-      index.reverse! # We need the indexes in reverse order so we delete correctly, otherwise the shift will result in left over objects we wanted to delete
-      Chef::Log.warn("accumulator_config_array_index: Result #{debug_var_output(index)}")
+      index.reverse! # We need the indexes in reverse order so we delete correctly, otherwise the shift will result in left over objects we intended to delete
+      Chef::Log.debug("accumulator_config_array_index: Result #{debug_var_output(index)}")
 
       index
     end
@@ -245,7 +277,7 @@ module ChefAutoAccumulator
       true
     end
 
-    # Initialise a path for a configuration file template resources variables
+    # Initialise a path for a configuration resources properties
     #
     # @param action [Symbol] The configuration action being performed
     # @param path [String, Symbol, Array<String>, Array<Symbol>] The path to initialise
@@ -263,7 +295,7 @@ module ChefAutoAccumulator
       Chef::Log.info("accumulator_config_path_init: Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
       config_path = config_file_template_content
       path.each do |l|
-        config_path[l] ||= if %i(array_push array_delete key_push key_delete).include?(action) && l.eql?(path.last)
+        config_path[l] ||= if %i(array_push array_delete key_push key_delete key_delete_match_self).include?(action) && l.eql?(path.last)
                              []
                            else
                              {}
@@ -292,10 +324,10 @@ module ChefAutoAccumulator
     )
       raise ArgumentError, "Path must be specified as Array, got #{debug_var_output(path)}" unless path.is_a?(Array)
 
-      # Initialise the parent path as normal
+      # Initialise the parent path
       parent_path = accumulator_config_path_init(action, *path)
       Chef::Log.debug("accumulator_config_containing_path_init: Got parent path #{debug_var_output(parent_path)}")
-      return parent_path if path.all? { |p| p.is_a?(NilClass) } # Root path specified. Do we need this?
+      return parent_path if path.all? { |p| p.is_a?(NilClass) } # Root path specified. Do we need this here?
 
       if accumulator_config_path_contained_nested?
         filter_tuple = filter_key.zip(filter_value, containing_key.slice(0...-1))
@@ -309,10 +341,9 @@ module ChefAutoAccumulator
           Chef::Log.debug("accumulator_config_containing_path_init: Search path set to #{debug_var_output(search_object)} for #{k} | #{v} | #{ck}")
         end
 
-        Chef::Log.debug("accumulator_config_containing_path_init: Resultant path #{debug_var_output(search_object)}")
+        Chef::Log.warn("accumulator_config_containing_path_init: Resultant path #{debug_var_output(search_object)}")
         search_object
       else
-
         # Find the object that matches the filter
         accumulator_config_path_filter(parent_path, filter_key, filter_value)
       end
@@ -323,18 +354,18 @@ module ChefAutoAccumulator
     # Filter a configuration item object collection by a key value pair
     #
     # @param path [Hash, Array] Collection to filter
-    # @param filter_key [String, Symbol] Key to filter on
-    # @param filter_value [Any] Value to filter for
+    # @param key [String, Symbol] Key to filter on
+    # @param value [Any] Value to filter for
     # @return [Hash] Object for which the filter matches
     #
-    def accumulator_config_path_filter(path, filter_key, filter_value)
+    def accumulator_config_path_filter(path, key, value)
       raise "The contained parent path should respond to :filter, class #{path.class} does not" unless path.respond_to?(:filter)
 
-      Chef::Log.debug("accumulator_config_path_filter: Filtering #{debug_var_output(path)} on #{debug_var_output(filter_key)} | #{debug_var_output(filter_value)}")
-      filtered_object = path.filter { |v| v[filter_key].eql?(filter_value) }
+      Chef::Log.debug("accumulator_config_path_filter: Filtering #{debug_var_output(path)} on #{debug_var_output(key)} | #{debug_var_output(value)}")
+      filtered_object = path.filter { |v| v[key].eql?(value) }
 
       Chef::Log.debug("accumulator_config_path_filter: Got filtered value #{debug_var_output(filtered_object)}")
-      raise AccumlatorConfigPathFilterError.new(filter_key, filter_value, path, filtered_object) unless filtered_object.one?
+      raise AccumlatorConfigPathFilterError.new(key, value, path, filtered_object) unless filtered_object.one?
 
       filtered_object.first
     end
