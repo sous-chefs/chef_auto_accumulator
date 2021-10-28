@@ -49,6 +49,14 @@ module ChefAutoAccumulator
       instance_variable_defined?(:@new_resource)
     end
 
+    # Return the resource declared name
+    #
+    # @return [String]
+    #
+    def resource_declared_name
+      instance_variable_defined?(:@new_resource) ? new_resource.name : name
+    end
+
     # Return the resource declared type name
     #
     # @return [String]
@@ -64,8 +72,15 @@ module ChefAutoAccumulator
     def debug_var_output(var)
       output = "[#{var.class}]"
       if var
-        var_output = var.to_s
-        var_output.prepend(':') if var.is_a?(Symbol)
+        var_output = case var
+                     when Hash
+                       "\n\n---\n#{var.pretty_inspect}---\n"
+                     when Symbol
+                       var.to_s.prepend(':')
+                     else
+                       var.to_s
+                     end
+
         output.concat(" #{var_output}")
       end
 
@@ -104,7 +119,8 @@ module ChefAutoAccumulator
     # @return [nil]
     #
     def log_chef(level, message)
-      Chef::Log.send(level, "#{caller[1][/`.*'/][1..-2]}: #{message}")
+      calling_method = caller.find { |v| v.match?(/\.rb:\d+/) }[/`.*'/][1..-2]
+      Chef::Log.send(level, "#{calling_method}: #{message}")
     end
   end
 end
