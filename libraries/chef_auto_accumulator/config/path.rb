@@ -39,7 +39,7 @@ module ChefAutoAccumulator
 
         config_path = Array(type_string.gsub(strip_regex, '').split('_').join('.'))
 
-        Chef::Log.debug("resource_default_config_path: Generated config path #{config_path}")
+        log_chef(:debug, "Generated config path #{config_path}")
         raise if nil_or_empty?(config_path)
 
         config_path

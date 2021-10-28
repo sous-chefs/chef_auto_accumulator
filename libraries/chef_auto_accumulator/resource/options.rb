@@ -33,7 +33,7 @@ module ChefAutoAccumulator
       #
       def option_config_file_type
         type = resource_options.fetch(:config_file_type, nil)
-        Chef::Log.debug("config_file_type: #{debug_var_output(type)}")
+        log_chef(:debug, "#{debug_var_output(type)}")
 
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_file_type', type, 'String', 'Symbol') unless multi_is_a?(type, String, Symbol)
 
@@ -46,7 +46,7 @@ module ChefAutoAccumulator
       #
       def option_config_base_path
         base = resource_options.fetch(:config_base_path, nil)
-        Chef::Log.trace("option_config_base_path: #{debug_var_output(base)}")
+        log_chef(:trace, "#{debug_var_output(base)}")
 
         return unless base
 
@@ -61,7 +61,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_override
         path = resource_options.fetch(:config_path_override, nil)
-        Chef::Log.trace("option_config_path_override: #{debug_var_output(path)}")
+        log_chef(:trace, "#{debug_var_output(path)}")
 
         return unless path
 
@@ -76,7 +76,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_type
         type = resource_options.fetch(:config_path_type, :hash)
-        Chef::Log.trace("option_config_path_type: #{debug_var_output(type)}")
+        log_chef(:trace, "#{debug_var_output(type)}")
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_type', type) unless type
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_type', type, *ALLOWED_PATH_TYPES) unless ALLOWED_PATH_TYPES.include?(type)
@@ -90,7 +90,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_match_key
         match_key = resource_options.fetch(:config_path_match_key, nil)
-        Chef::Log.trace("option_config_path_match_key: #{debug_var_output(match_key)}")
+        log_chef(:trace, "#{debug_var_output(match_key)}")
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_key', match_key) unless match_key
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_match_key', match_key, 'String', 'Symbol', 'Array') unless multi_is_a?(match_key, String, Symbol, Array)
@@ -104,7 +104,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_match_value
         match_value = resource_options.fetch(:config_path_match_value, nil)
-        Chef::Log.trace("option_config_path_match_value: #{debug_var_output(match_value)}")
+        log_chef(:trace, "#{debug_var_output(match_value)}")
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_value', match_value) unless match_value
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_value', match_value) unless match_value
@@ -118,7 +118,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_contained_key
         contained_key = resource_options.fetch(:config_path_contained_key, nil)
-        Chef::Log.trace("option_config_path_contained_key: #{debug_var_output(contained_key)}")
+        log_chef(:trace, "#{debug_var_output(contained_key)}")
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_contained_key', contained_key) unless contained_key
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_contained_key', contained_key, 'String', 'Symbol', 'Array') unless multi_is_a?(contained_key, String, Symbol, Array)
@@ -132,7 +132,7 @@ module ChefAutoAccumulator
       #
       def option_config_match
         match = resource_options.fetch(:config_match, nil)
-        Chef::Log.trace("option_config_match: #{debug_var_output(match)}")
+        log_chef(:trace, "#{debug_var_output(match)}")
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match', match) unless match
 
@@ -145,7 +145,7 @@ module ChefAutoAccumulator
       #
       def option_config_properties_skip
         skip = resource_options.fetch(:config_properties_skip, nil)
-        Chef::Log.trace("option_config_properties_skip: #{debug_var_output(skip)}")
+        log_chef(:trace, "#{debug_var_output(skip)}")
 
         return unless skip
 
@@ -160,7 +160,7 @@ module ChefAutoAccumulator
       #
       def option_property_name_gsub
         gsub = resource_options.fetch(:property_name_gsub, nil)
-        Chef::Log.trace("option_property_name_gsub: #{debug_var_output(gsub)}")
+        log_chef(:trace, "#{debug_var_output(gsub)}")
 
         return unless gsub
         raise ResourceOptionMalformedError.new(resource_type_name, 'property_name_gsub', property_name_gsub, 'Array of 2 String') unless gsub.is_a?(Array) &&
@@ -176,7 +176,7 @@ module ChefAutoAccumulator
       #
       def option_property_translation_matrix
         matrix = resource_options.fetch(:property_translation_matrix, nil)
-        Chef::Log.trace("option_property_translation_matrix: #{debug_var_output(matrix)}")
+        log_chef(:trace, "#{debug_var_output(matrix)}")
 
         return unless matrix
         raise ResourceOptionMalformedError.new(resource_type_name, 'property_translation_matrix', matrix, 'Hash') unless matrix.is_a?(Hash)
@@ -203,11 +203,11 @@ module ChefAutoAccumulator
                     end
 
         if overrides
-          Chef::Log.trace("resource_options: Override options - #{debug_var_output(overrides)}")
+          log_chef(:trace, "Override options - #{debug_var_output(overrides)}")
           options = options.merge(overrides).freeze
         end
 
-        Chef::Log.trace("resource_options: Merged options - #{debug_var_output(options)}")
+        log_chef(:trace, "Merged options - #{debug_var_output(options)}")
         return {} unless options
 
         raise ResourceOptionMalformedError.new(resource_type_name, 'options', options, 'Hash') unless options.is_a?(Hash)

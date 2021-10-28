@@ -59,7 +59,7 @@ property :extra_options, Hash,
 
 load_current_value do |new_resource|
   if resource_properties.all? { |rp| new_resource.send(rp).nil? }
-    Chef::Log.warn('No properties are set, skipping load_current_value. Should this resource exist?')
+    log_chef(:warn, 'No properties are set, skipping load_current_value. Should this resource exist?')
     return
   end
 
