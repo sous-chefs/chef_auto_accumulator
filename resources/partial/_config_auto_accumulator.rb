@@ -163,11 +163,11 @@ action :delete do
   when :array
     converge_by("Deleting configuration for #{new_resource.declared_type.to_s} #{new_resource.name}") do
       accumulator_config(action: :array_delete)
-    end if accumulator_config_array_present?
+    end if config_file_config_present?
   when :array_contained
     converge_by("Deleting configuration for #{new_resource.declared_type.to_s} #{new_resource.name}") do
-      accumulator_config(action: :key_delete_match_self, key: option_config_path_contained_key)
-    end if accumulator_config_array_present?
+      accumulator_config(action: :key_delete_match_self, key: accumulator_config_path_containing_key)
+    end if config_file_config_present?
   when :hash
     set_properties = resource_properties.push(:extra_options).filter { |rp| property_is_set?(rp) }
     delete_properties = nil_or_empty?(set_properties) ? resource_properties : set_properties
@@ -185,7 +185,7 @@ action :delete do
   when :hash_contained
     converge_by("Deleting configuration for #{new_resource.declared_type.to_s} #{new_resource.name}") do
       accumulator_config(action: :delete, key: option_config_path_contained_key)
-    end if accumulator_config_present?(option_config_path_contained_key)
+    end if config_file_config_present?
   else
     raise "Unknown config path type #{debug_var_output(option_config_path_type)}"
   end

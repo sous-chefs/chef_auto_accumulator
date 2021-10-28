@@ -81,6 +81,8 @@ module ChefAutoAccumulator
 
                  while (k, v, ck = filter_tuple.shift)
                    Chef::Log.debug("load_config_file_section_item: Filtering for #{debug_var_output(k)} | #{debug_var_output(v)} | #{debug_var_output(ck)}")
+                   break if search_object.nil?
+
                    search_object = search_object.select { |cs| cs[k].eql?(v) }
                    search_object = search_object.first.fetch(ck, nil) if ck
 
@@ -96,6 +98,8 @@ module ChefAutoAccumulator
                end
 
         Chef::Log.debug("load_config_file_section_item: Filtered items #{debug_var_output(item)}")
+
+        return if item.nil?
 
         raise unless item.one? || item.empty?
         item = item.first
@@ -120,14 +124,14 @@ module ChefAutoAccumulator
         config = load_config_file_section_item(config_file)
 
         if nil_or_empty?(config)
-          Chef::Log.warn('load_config_file_section_contained_item: Nil or empty config, returning')
+          Chef::Log.info('load_config_file_section_contained_item: Nil or empty config, returning')
           return
         end
 
         ck = accumulator_config_path_containing_key
         outer_key_config = config.fetch(ck, nil)
         if nil_or_empty?(outer_key_config)
-          Chef::Log.warn('load_config_file_section_contained_item: Nil or empty outer_key_config, returning')
+          Chef::Log.info('load_config_file_section_contained_item: Nil or empty outer_key_config, returning')
           return
         end
 
@@ -149,6 +153,27 @@ module ChefAutoAccumulator
         end
 
         item.first
+      end
+
+      # Test if a resources configuration is present on disk
+      #
+      # @return [true, false] Test result
+      #
+      def config_file_config_present?
+        config = case option_config_path_type
+                 when :array
+                   load_config_file_section_item(new_resource.config_file)
+                 when :array_contained
+                   load_config_file_section_contained_item(new_resource.config_file)
+                 when :hash
+                   load_config_file_section(new_resource.config_file)
+                 when :hash_contained
+                   section = load_config_file_section(new_resource.config_file)
+                   section.fetch(option_config_path_contained_key, nil) if section.is_a?(Hash)
+                 end
+
+        log_chef(:debug, debug_var_output(config))
+        !config.nil?
       end
 
       # Error to raise when failing to filter a single containing resource from a parent path
