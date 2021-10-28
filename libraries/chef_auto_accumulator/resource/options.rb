@@ -123,7 +123,11 @@ module ChefAutoAccumulator
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_contained_key', contained_key) unless contained_key
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_contained_key', contained_key, 'String', 'Symbol', 'Array') unless multi_is_a?(contained_key, String, Symbol, Array)
 
-        Array(contained_key)
+        if option_config_path_type.eql?(:array_contained)
+          Array(contained_key)
+        else
+          contained_key
+        end
       end
 
       # Return the key/value pairs to match the resource configuration against for load_current_value
