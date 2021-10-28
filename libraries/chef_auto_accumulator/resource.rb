@@ -94,12 +94,9 @@ module ChefAutoAccumulator
       log_string.concat("path #{path.map { |p| "['#{p}']" }.join} #{debug_var_output(config_path)}")
       Chef::Log.info(log_string)
 
-      # Initialise key if nil
-      if %i(key_push key_delete key_delete_match_self).include?(action) && config_path[config_key].nil?
-        Chef::Log.warn("accumulator_config: Initialising #{debug_var_output(config_key)} as Array for path #{debug_var_output(config_path)}")
-        config_path[config_key] = []
-      end
-
+      ###
+      ## Config action
+      ###
       case action
       ###
       ## Hash config_path
@@ -121,6 +118,7 @@ module ChefAutoAccumulator
           config_path[config_key][accumulator_config_array_index.pop].merge!(value)
         elsif !accumulator_config_array_present?
           # Create
+          config_path[config_key] = []
           config_path[config_key].push(value)
         else
           # Replace (remove duplicates if present)
@@ -129,11 +127,13 @@ module ChefAutoAccumulator
         end
       when :key_delete
         # config_path is an Hash with an Array key
-        # Delete matched indexes from key
+        # Delete matched indexes from key, immediately return if the path is nil or empty
+        return if nil_or_empty?(config_path[config_key])
         accumulator_config_array_index.each { |i| config_path[config_key].delete_at(i) } if accumulator_config_array_present?
       when :key_delete_match_self
         # config_path is an Hash with an Array key
-        # Delete indexes that match the current resource config
+        # Delete indexes that match the current resource config, immediately return if the path is nil or empty
+        return if nil_or_empty?(config_path)
         option_config_match.transform_keys! { |k| translate_property_value(k) }
         option_config_match.each { |k, v| config_path[config_key].delete_if { |kdm| kdm[k].eql?(v) } }
       ###
@@ -183,8 +183,11 @@ module ChefAutoAccumulator
 
                 Chef::Log.debug("accumulator_config_array_index: Searching :array_contained #{debug_var_output(ck)} against #{debug_var_output(match)}")
 
-                array_cpath = accumulator_config_containing_path_init(action: action, path: path).fetch(ck, [])
-                array_cpath.each_index.select { |i| match.any? { |k, v| kv_test_log(array_cpath[i], k, v) } }
+                array_cpath = accumulator_config_containing_path_init(action: action, path: path)
+                return unless array_cpath
+
+                # Fetch the containing key and filter for any objects that match the filter
+                array_cpath.fetch(ck, []).each_index.select { |i| match.any? { |k, v| kv_test_log(array_cpath[i], k, v) } }
               else
                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
               end
@@ -331,24 +334,35 @@ module ChefAutoAccumulator
 
       if accumulator_config_path_contained_nested?
         filter_tuple = filter_key.zip(filter_value, containing_key.slice(0...-1))
-        Chef::Log.debug("accumulator_config_containing_path_init: Zipped pairs #{debug_var_output(filter_tuple)}")
+        Chef::Log.debug("accumulator_config_containing_path_init: Zipped search tuples #{debug_var_output(filter_tuple)}")
+
+        # Set the initial search path
         search_object = parent_path
-        Chef::Log.debug("accumulator_config_containing_path_init: Initial search path set to #{debug_var_output(search_object)}")
 
         while (k, v, ck = filter_tuple.shift)
+          search_path_log = "Searching path #{debug_var_output(search_object)} for Key: #{debug_var_output(k)} | Value: #{debug_var_output(v)}"
+          search_path_log.concat(" | Containing Key: #{debug_var_output(ck)}") if ck
+          break if search_object.nil?
+
+          # Filter the containing Array objects
           search_object = accumulator_config_path_filter(search_object, k, v)
-          search_object = search_object.fetch(ck) if ck
-          Chef::Log.debug("accumulator_config_containing_path_init: Search path set to #{debug_var_output(search_object)} for #{k} | #{v} | #{ck}")
+          if search_object.nil?
+            log_chef(:info, "Got a nil search object for #{debug_var_output(k)} | #{debug_var_output(v)}, breaking")
+            break
+          end
+
+          # Fetch the containing key
+          search_object = search_object.fetch(ck) if ck && !search_object.nil?
         end
 
-        Chef::Log.warn("accumulator_config_containing_path_init: Resultant path #{debug_var_output(search_object)}")
+        log_chef(:debug, "Resultant path #{debug_var_output(search_object)}")
         search_object
       else
         # Find the object that matches the filter
         accumulator_config_path_filter(parent_path, filter_key, filter_value)
       end
-    rescue KeyError => e
-      raise e, "Could not find containing key #{debug_var_output(ck)}, does the containing configuration resource exist?"
+    rescue NameError, KeyError => e
+      raise AccumlatorConfigNoParentPathError.new(e, resource_declared_name, resource_type_name, k, v, ck, search_object)
     end
 
     # Filter a configuration item object collection by a key value pair
@@ -363,6 +377,8 @@ module ChefAutoAccumulator
 
       Chef::Log.debug("accumulator_config_path_filter: Filtering #{debug_var_output(path)} on #{debug_var_output(key)} | #{debug_var_output(value)}")
       filtered_object = path.filter { |v| v[key].eql?(value) }
+
+      return if filtered_object.empty?
 
       Chef::Log.debug("accumulator_config_path_filter: Got filtered value #{debug_var_output(filtered_object)}")
       raise AccumlatorConfigPathFilterError.new(key, value, path, filtered_object) unless filtered_object.one?
@@ -381,5 +397,25 @@ module ChefAutoAccumulator
 
     # Error to raise when failing to filter a single containing resource from a parent path
     class AccumlatorConfigPathFilterError < FilterError; end
+
+    # Error to raise when a parent containing object does not exist
+    class AccumlatorConfigNoParentPathError < BaseError
+      def initialize(error, name, type, k, v, ck, path)
+        error_msg = "Failed to find a parent containing object for #{type}[#{name}]\n"
+        error_msg << case error
+                     when NameError
+                       "Got NameError when Filtering object #{debug_var_output(path)} for"\
+                       "Key: #{debug_var_output(k)}, Value: #{debug_var_output(v)}\n"
+                     when KeyError
+                       "Got KeyError when fetching Containing Key: #{debug_var_output(ck)} from object\n"\
+                       "\n#{debug_var_output(path)}\n"\
+                       'Does the parent containing configuration resource exist?'
+                     else
+                       "Unknown error #{error.class} occured"
+                     end
+
+        super(Array(error_msg).join("\n"))
+      end
+    end
   end
 end
