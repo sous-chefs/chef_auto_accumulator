@@ -105,7 +105,7 @@ module ChefAutoAccumulator
     # @return [true, false]
     #
     def kv_test_log(object, key, value)
-      raise ArgumentError, "Object #{debug_var_output(object)} does not respond to :fetch" unless object.respond_to?(:fetch)
+      return false unless object.respond_to?(:fetch)
 
       log_chef(:trace, "Testing key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}")
       result = object.fetch(key, nil).eql?(value)
