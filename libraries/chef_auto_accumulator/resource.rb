@@ -84,8 +84,7 @@ module ChefAutoAccumulator
                     else
                       raise ArgumentError, "Unknown config path type #{debug_var_output(option_config_path_type)}"
                     end
-
-      config_key = translate_property_value(key)
+      config_key = translate_property_value(key) if key
 
       log_string = ''
       log_string.concat("Perfoming action #{action} on ")
@@ -93,6 +92,25 @@ module ChefAutoAccumulator
       log_string.concat("value #{debug_var_output(value)} on ") if value
       log_string.concat("path #{path.map { |p| "['#{p}']" }.join} #{debug_var_output(config_path)}")
       log_chef(:info, log_string)
+
+      ###
+      ## Array Sub-Action
+      ###
+      push_action = if !accumulator_config_array_present?
+                      # Create
+                      log_chef(:debug, "Create Array and push #{value}")
+                      :create
+                    elsif accumulator_config_array_present? && accumulator_config_array_index.one? && value.respond_to?(:merge)
+                      # Merge with existing
+                      log_chef(:debug, "Merge #{value} with existing")
+                      :merge
+                    elsif accumulator_config_array_present? && (accumulator_config_array_index.count > 1)
+                      # Replace (remove duplicates if present)
+                      log_chef(:debug, "Replacing duplicates with #{value}")
+                      :replace
+                    else
+                      raise 'Unknown push_action state'
+                    end if %i(key_push array_push).include?(action)
 
       ###
       ## Config action
@@ -113,15 +131,13 @@ module ChefAutoAccumulator
         config_path[config_key].concat(value.to_s) unless config_path[config_key].match?(value)
       when :key_push
         # config_path is an Hash with an Array key
-        if accumulator_config_array_present? && accumulator_config_array_index.one? && value.respond_to?(:merge)
-          # Merge with existing
-          config_path[config_key][accumulator_config_array_index.pop].merge!(value)
-        elsif !accumulator_config_array_present?
-          # Create
-          config_path[config_key] = []
+        case push_action
+        when :create
+          config_path[config_key] ||= []
           config_path[config_key].push(value)
-        else
-          # Replace (remove duplicates if present)
+        when :merge
+          config_path[config_key][accumulator_config_array_index.pop].merge!(value)
+        when :replace
           accumulator_config_array_index.each { |i| config_path[config_key].delete_at(i) }
           config_path[config_key].push(value)
         end
@@ -141,16 +157,15 @@ module ChefAutoAccumulator
       ###
       when :array_push
         # config_path is an Array
-        if accumulator_config_array_present? && accumulator_config_array_index.one? && value.respond_to?(:merge)
-          # Merge with existing
-          object = config_path.delete_at(accumulator_config_array_index.pop)
-          object.merge!(value)
-          config_path.push(object)
-        elsif !accumulator_config_array_present?
-          # Create
+        case push_action
+        when :create
           config_path.push(value)
-        else
-          # Replace (remove duplicates if present)
+        when :merge
+          # object = config_path.delete_at(accumulator_config_array_index.pop)
+          # object.merge!(value)
+          # config_path.push(object)
+          config_path[accumulator_config_array_index.pop].merge!(value)
+        when :replace
           accumulator_config_array_index.each { |i| config_path.delete_at(i) }
           config_path.push(value)
         end
