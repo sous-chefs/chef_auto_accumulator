@@ -53,7 +53,7 @@ module ChefAutoAccumulator
 
         path = resource_config_path
         section_config = config.dig(*path)
-        log_chef(:debug, "#{config_file} section #{path.join('|')} - [#{section_config.class}] #{section_config}")
+        log_chef(:debug, "#{config_file} section #{path.join(' -> ')}\n#{debug_var_output(section_config)}")
 
         section_config
       end
@@ -69,7 +69,7 @@ module ChefAutoAccumulator
         return if nil_or_empty?(config)
 
         match = option_config_match.transform_keys { |k| translate_property_value(k) }
-        log_chef(:debug, "Filtering on #{debug_var_output(match)} against #{debug_var_output(config)}")
+        log_chef(:debug, "Filtering\n#{debug_var_output(match)}\n\nagainst\n\n#{debug_var_output(config)}")
 
         item = if accumulator_config_path_contained_nested?
                  option_config_path_match_key.map! { |k| translate_property_value(k) }
@@ -86,18 +86,18 @@ module ChefAutoAccumulator
                    search_object = search_object.select { |cs| cs[k].eql?(v) }
                    search_object = search_object.first.fetch(ck, nil) if ck
 
-                   log_string = "load_config_file_section_item: Search path set to #{debug_var_output(search_object)} for #{k}, #{v}"
+                   log_string = "Search path set to #{debug_var_output(search_object)} for #{k}, #{v}"
                    log_string.concat("and #{ck}") if ck
                    log_chef(:trace, log_string)
                  end unless search_object.nil?
 
-                 log_chef(:debug, "Resultant path #{debug_var_output(search_object)}")
+                 log_chef(:debug, "Resultant path\n#{debug_var_output(search_object)}")
                  search_object
                else
                  config.select { |cs| match.any? { |mk, mv| kv_test_log(cs, mk, mv) } }
                end
 
-        log_chef(:debug, "Filtered items #{debug_var_output(item)}")
+        log_chef(:debug, "Filtered items\n#{debug_var_output(item)}")
 
         return if item.nil?
 
@@ -105,9 +105,9 @@ module ChefAutoAccumulator
         item = item.first
 
         if item
-          log_chef(:info, "#{config_file} match #{debug_var_output(match)}. Result #{debug_var_output(item)}")
+          log_chef(:info, "#{config_file} got Match for Filter\n#{debug_var_output(match)}\n\nResult\n\n#{debug_var_output(item)}")
         else
-          log_chef(:info, "#{config_file} no match for #{debug_var_output(match)}")
+          log_chef(:info, "#{config_file} got No Match for Filter\n#{debug_var_output(match)}")
         end
 
         item
@@ -141,16 +141,17 @@ module ChefAutoAccumulator
         log_chef(:trace, "Filtering against K/V pairs #{debug_var_output(match)}")
 
         item = outer_key_config.filter { |object| match.any? { |k, v| kv_test_log(object, k, v) } }
-        log_chef(:info, "Filtered items #{debug_var_output(item)}")
 
-        return if nil_or_empty?(item)
-
-        unless item.one? || item.empty?
-          log_chef(:warn, 
-            "load_config_file_section_item: Expected either one or zero filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}"
-          )
-          raise Chef::Exceptions::CurrentValueDoesNotExist
+        if nil_or_empty?(item)
+          log_chef(:info, "#{config_file} got No Match for Filter\n#{debug_var_output(match)}")
+          return
+        else
+          log_chef(:info, "#{config_file} got Match for Filter\n#{debug_var_output(match)}\nResult\n#{debug_var_output(item)}")
         end
+
+        log_chef(:warn,
+          "load_config_file_section_item: Expected either one or zero filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}"
+        ) unless item.one?
 
         item.first
       end

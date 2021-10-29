@@ -87,10 +87,10 @@ module ChefAutoAccumulator
       config_key = translate_property_value(key) if key
 
       log_string = ''
-      log_string.concat("Perfoming action #{action} on ")
-      log_string.concat("config key #{debug_var_output(config_key)}, ") if key
-      log_string.concat("value #{debug_var_output(value)} on ") if value
-      log_string.concat("path #{path.map { |p| "['#{p}']" }.join} #{debug_var_output(config_path)}")
+      log_string.concat("\nPerfoming action :#{action} on configuration ")
+      log_string.concat("Path: #{path.join(' -> ')}\n#{debug_var_output(config_path)}\n")
+      log_string.concat("Key:\n\t#{debug_var_output(config_key)}\n") if key
+      log_string.concat("Value:\n\t#{debug_var_output(value)}\n") if value
       log_chef(:info, log_string)
 
       ###
@@ -175,6 +175,17 @@ module ChefAutoAccumulator
       else
         raise ArgumentError, "Unsupported accumulator config action #{action}"
       end
+
+      # Return and log resultant configuration
+      resultant_config = if key
+                           config_path[config_key]
+                         else
+                           config_path
+                         end
+
+      log_chef(:debug, "Resultant configuration #{debug_var_output(resultant_config)}")
+
+      resultant_config
     end
 
     # Get the index for the configuration item within an Array if it exists
@@ -370,7 +381,7 @@ module ChefAutoAccumulator
           search_object = search_object.fetch(ck) if ck && !search_object.nil?
         end
 
-        log_chef(:debug, "Resultant path #{debug_var_output(search_object)}")
+        log_chef(:debug, "Resultant path\n#{debug_var_output(search_object)}")
         search_object
       else
         # Find the object that matches the filter

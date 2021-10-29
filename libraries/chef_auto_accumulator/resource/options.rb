@@ -197,7 +197,11 @@ module ChefAutoAccumulator
                     auto_accumulator_options
                   elsif action_class? && new_resource.respond_to?(:auto_accumulator_options)
                     new_resource.auto_accumulator_options
+                  else
+                    raise ResourceOptionsNotDefinedError
                   end
+
+        raise ResourceOptionMalformedError.new(resource_type_name, 'options', options, 'Hash') unless options.is_a?(Hash)
 
         # Per-resource overrides
         overrides = if !action_class? && respond_to?(:auto_accumulator_options_override)
@@ -206,23 +210,27 @@ module ChefAutoAccumulator
                       new_resource.auto_accumulator_options_override
                     end
 
+        raise ResourceOptionMalformedError.new(resource_type_name, 'overrides', overrides, 'Hash') unless options.is_a?(Hash)
+
         if overrides
           log_chef(:trace, "Override options - #{debug_var_output(overrides)}")
           options = options.merge(overrides).freeze
         end
 
         log_chef(:trace, "Merged options - #{debug_var_output(options)}")
-        return {} unless options
-
-        raise ResourceOptionMalformedError.new(resource_type_name, 'options', options, 'Hash') unless options.is_a?(Hash)
 
         options
       end
 
+      # Error to raise when attemping to the option method is not defined
+      class ResourceOptionsNotDefinedError < BaseError
+        def initialize
+          super("The auto_accumulator_options method is not defined for resource type #{resource_declared_name}")
+        end
+      end
+
       # Error to raise when attemping to retrieve an option that is not defined on the resource
       class ResourceOptionNotDefinedError < BaseError
-        include ChefAutoAccumulator::Utils
-
         def initialize(name, option, received_value)
           super("Unable to retrieve option #{option} for resource #{name}, received #{debug_var_output(received_value)}")
         end
@@ -230,8 +238,6 @@ module ChefAutoAccumulator
 
       # Error to raise when an incorrect type is returning when retrieving an option value
       class ResourceOptionMalformedError < BaseError
-        include ChefAutoAccumulator::Utils
-
         def initialize(name, option, received_value, *expected_value)
           super("Type error occured retrieving option #{option} for resource #{name}. Expected #{expected_value.join(', ')}, received #{debug_var_output(received_value)}")
         end

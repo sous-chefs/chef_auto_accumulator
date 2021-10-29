@@ -70,21 +70,17 @@ module ChefAutoAccumulator
     # @return [String] The formatted debug output
     #
     def debug_var_output(var)
-      output = "[#{var.class}]"
-      if var
-        var_output = case var
-                     when Hash
-                       "\n\n---\n#{var.pretty_inspect}---\n"
-                     when Symbol
-                       var.to_s.prepend(':')
-                     else
-                       var.to_s
-                     end
+      output = "[#{var.class}] "
+      output << case var
+                when Array, Hash
+                  "\n---\n#{var.pretty_inspect}---\n"
+                when Symbol
+                  var.to_s.prepend(':')
+                else
+                  var.to_s
+                end if var
 
-        output.concat(" #{var_output}")
-      end
-
-      output
+      output.strip
     end
 
     # Test an object against multiple Classes to see if it is an instance of any of them
