@@ -268,7 +268,7 @@ module ChefAutoAccumulator
       log_chef(:info, "Creating config template resource for #{new_resource.config_file}")
 
       config_content = if new_resource.load_existing_config_file
-                         existing_config_load = load_config_file(new_resource.config_file) || {}
+                         existing_config_load = load_config_file(new_resource.config_file, false) || {}
                          log_chef(:debug, "Existing config load data: [#{existing_config_load.class}] #{existing_config_load}")
 
                          existing_config_load

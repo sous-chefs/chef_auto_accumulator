@@ -31,12 +31,21 @@ module ChefAutoAccumulator
       # @param config_file [String] The configuration file to load
       # @return [Hash] Configuration file contents
       #
-      def load_config_file(config_file)
+      def load_config_file(config_file, cache = true)
         return unless ::File.exist?(config_file)
 
-        config = load_file(config_file)
-        log_chef(:debug, "#{config_file} Count - #{config.count}")
-        log_chef(:trace, "#{config_file} - #{debug_var_output(config)}")
+        node.run_state['caa'] ||= {}
+        node.run_state['caa']['load_config_file'] ||= {}
+
+        if node.run_state['caa']['load_config_file'].key?(config_file) && cache
+          log_chef(:debug, "Returning #{config_file} from cache\n#{debug_var_output(node.run_state['caa']['load_config_file'][config_file])}")
+          return node.run_state['caa']['load_config_file'][config_file]
+        end
+
+        node.run_state['caa']['load_config_file'][config_file] = load_file(config_file)
+        config = node.run_state['caa']['load_config_file'][config_file]
+        log_chef(:debug, "Loading #{config_file} Count - #{config.count}")
+        log_chef(:trace, "Loading #{config_file}\n#{debug_var_output(config)}")
 
         config
       end
