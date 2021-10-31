@@ -55,15 +55,15 @@ module ChefAutoAccumulator
     #
     def resource_properties
       properties = action_class? ? new_resource.class.properties(false).keys : self.class.properties(false).keys
-      log_chef(:trace, "Got properties from resource: #{properties.sort.join(', ')}")
+      log_chef(:trace) { "Got properties from resource: #{properties.sort.join(', ')}" }
       properties.reject! { |p| GLOBAL_CONFIG_PROPERTIES_SKIP.include?(p) }
 
       if option_config_properties_skip
-        log_chef(:trace, "Resourced defined skip properties: #{option_config_properties_skip.join(', ')}")
+        log_chef(:trace) { "Resourced defined skip properties: #{option_config_properties_skip.join(', ')}" }
         properties.reject! { |p| option_config_properties_skip.include?(p) }
       end
 
-      log_chef(:debug, "Resultant filtered properties for #{resource_type_name}: #{properties.sort.join(', ')}")
+      log_chef(:debug) { "Resultant filtered properties for #{resource_type_name}: #{properties.sort.join(', ')}" }
       properties
     end
 
@@ -91,22 +91,22 @@ module ChefAutoAccumulator
       log_string.concat("Path: #{path.join(' -> ')}\n#{debug_var_output(config_path)}\n")
       log_string.concat("Key:\n\t#{debug_var_output(config_key)}\n") if key
       log_string.concat("Value:\n\t#{debug_var_output(value)}\n") if value
-      log_chef(:info, log_string)
+      log_chef(:info) { log_string }
 
       ###
       ## Array Sub-Action
       ###
       push_action = if !accumulator_config_array_present?
                       # Create
-                      log_chef(:debug, "Create Array and push #{value}")
+                      log_chef(:debug) { "Create Array and push #{value}" }
                       :create
                     elsif accumulator_config_array_present? && accumulator_config_array_index.one? && value.respond_to?(:merge)
                       # Merge with existing
-                      log_chef(:debug, "Merge #{value} with existing")
+                      log_chef(:debug) { "Merge #{value} with existing" }
                       :merge
                     elsif accumulator_config_array_present? && (accumulator_config_array_index.count > 1)
                       # Replace (remove duplicates if present)
-                      log_chef(:debug, "Replacing duplicates with #{value}")
+                      log_chef(:debug) { "Replacing duplicates with #{value}" }
                       :replace
                     else
                       raise 'Unknown push_action state'
@@ -183,7 +183,7 @@ module ChefAutoAccumulator
                            config_path
                          end
 
-      log_chef(:debug, "Resultant configuration #{debug_var_output(resultant_config)}")
+      log_chef(:debug) { "Resultant configuration #{debug_var_output(resultant_config)}" }
 
       resultant_config
     end
@@ -200,14 +200,14 @@ module ChefAutoAccumulator
       # Find the Array index for the configuration object that matches the resource definition
       index = case option_config_path_type
               when :array
-                log_chef(:debug, "Testing :array for #{debug_var_output(match)}")
+                log_chef(:debug) { "Testing :array for #{debug_var_output(match)}" }
 
                 array_path = accumulator_config_path_init(action, *path)
                 array_path.each_index.select { |i| match.any? { |k, v| kv_test_log(array_path[i], k, v) } }
               when :array_contained
                 ck = accumulator_config_path_containing_key
 
-                log_chef(:debug, "Searching :array_contained #{debug_var_output(ck)} against #{debug_var_output(match)}")
+                log_chef(:debug) { "Searching :array_contained #{debug_var_output(ck)} against #{debug_var_output(match)}" }
 
                 array_cpath = accumulator_config_containing_path_init(action: action, path: path)
                 return unless array_cpath
@@ -219,7 +219,7 @@ module ChefAutoAccumulator
               end
 
       index.reverse! # We need the indexes in reverse order so we delete correctly, otherwise the shift will result in left over objects we intended to delete
-      log_chef(:debug, "Result #{debug_var_output(index)}")
+      log_chef(:debug) { "Result #{debug_var_output(index)}" }
 
       index
     end
@@ -230,7 +230,7 @@ module ChefAutoAccumulator
     #
     def accumulator_config_array_present?
       result = !nil_or_empty?(accumulator_config_array_index)
-      log_chef(:debug, "accumulator_config_array_present?: Result #{debug_var_output(result)}")
+      log_chef(:debug) { "accumulator_config_array_present?: Result #{debug_var_output(result)}" }
 
       result
     end
@@ -248,13 +248,13 @@ module ChefAutoAccumulator
     # @return [true, false]
     #
     def config_template_exist?
-      log_chef(:debug, "config_template_exist?: Checking for config file template #{new_resource.config_file}")
+      log_chef(:debug) { "config_template_exist?: Checking for config file template #{new_resource.config_file}" }
       config_resource = !find_resource!(:template, ::File.join(new_resource.config_file)).nil?
 
-      log_chef(:debug, "config_template_exist?: #{config_resource}")
+      log_chef(:debug) { "config_template_exist?: #{config_resource}" }
       config_resource
     rescue Chef::Exceptions::ResourceNotFound
-      log_chef(:debug, "config_template_exist?: Config file template #{new_resource.config_file} ResourceNotFound")
+      log_chef(:debug) { "config_template_exist?: Config file template #{new_resource.config_file} ResourceNotFound" }
       false
     end
 
@@ -265,11 +265,11 @@ module ChefAutoAccumulator
     def init_config_template
       return false if config_template_exist?
 
-      log_chef(:info, "Creating config template resource for #{new_resource.config_file}")
+      log_chef(:info) { "Creating config template resource for #{new_resource.config_file}" }
 
       config_content = if new_resource.load_existing_config_file
                          existing_config_load = load_config_file(new_resource.config_file, false) || {}
-                         log_chef(:debug, "Existing config load data: [#{existing_config_load.class}] #{existing_config_load}")
+                         log_chef(:debug) { "Existing config load data: [#{existing_config_load.class}] #{existing_config_load}" }
 
                          existing_config_load
                        else
@@ -321,7 +321,7 @@ module ChefAutoAccumulator
       existing_path = config_file_template_content.dig(*path)
       return existing_path if existing_path.is_a?(Array) || existing_path.is_a?(Hash)
 
-      log_chef(:info, "Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}")
+      log_chef(:info) { "Initialising config file #{new_resource.config_file} path config#{path.map { |p| "['#{p}']" }.join}" }
       config_path = config_file_template_content
       path.each do |l|
         config_path[l] ||= if %i(array_push array_delete key_push key_delete key_delete_match_self).include?(action) && l.eql?(path.last)
@@ -355,12 +355,12 @@ module ChefAutoAccumulator
 
       # Initialise the parent path
       parent_path = accumulator_config_path_init(action, *path)
-      log_chef(:debug, "Got parent path #{debug_var_output(parent_path)}")
+      log_chef(:debug) { "Got parent path #{debug_var_output(parent_path)}" }
       return parent_path if path.all? { |p| p.is_a?(NilClass) } # Root path specified. Do we need this here?
 
       if accumulator_config_path_contained_nested?
         filter_tuple = filter_key.zip(filter_value, containing_key.slice(0...-1))
-        log_chef(:debug, "Zipped search tuples #{debug_var_output(filter_tuple)}")
+        log_chef(:debug) { "Zipped search tuples #{debug_var_output(filter_tuple)}" }
 
         # Set the initial search path
         search_object = parent_path
@@ -373,7 +373,7 @@ module ChefAutoAccumulator
           # Filter the containing Array objects
           search_object = accumulator_config_path_filter(search_object, k, v)
           if search_object.nil?
-            log_chef(:info, "Got a nil search object for #{debug_var_output(k)} | #{debug_var_output(v)}, breaking")
+            log_chef(:info) { "Got a nil search object for #{debug_var_output(k)} | #{debug_var_output(v)}, breaking" }
             break
           end
 
@@ -381,7 +381,7 @@ module ChefAutoAccumulator
           search_object = search_object.fetch(ck) if ck && !search_object.nil?
         end
 
-        log_chef(:debug, "Resultant path\n#{debug_var_output(search_object)}")
+        log_chef(:debug) { "Resultant path\n#{debug_var_output(search_object)}" }
         search_object
       else
         # Find the object that matches the filter
@@ -401,12 +401,12 @@ module ChefAutoAccumulator
     def accumulator_config_path_filter(path, key, value)
       raise "The contained parent path should respond to :filter, class #{path.class} does not" unless path.respond_to?(:filter)
 
-      log_chef(:debug, "Filtering #{debug_var_output(path)} on #{debug_var_output(key)} | #{debug_var_output(value)}")
+      log_chef(:debug) { "Filtering #{debug_var_output(path)} on #{debug_var_output(key)} | #{debug_var_output(value)}" }
       filtered_object = path.filter { |v| v[key].eql?(value) }
 
       return if filtered_object.empty?
 
-      log_chef(:debug, "Got filtered value #{debug_var_output(filtered_object)}")
+      log_chef(:debug) { "Got filtered value #{debug_var_output(filtered_object)}" }
       raise AccumlatorConfigPathFilterError.new(key, value, path, filtered_object) unless filtered_object.one?
 
       filtered_object.first

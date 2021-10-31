@@ -17,6 +17,8 @@
 # limitations under the License.
 #
 
+require 'mixlib/log'
+
 module ChefAutoAccumulator
   # General utility methods
   module Utils
@@ -103,20 +105,31 @@ module ChefAutoAccumulator
     def kv_test_log(object, key, value)
       return false unless object.respond_to?(:fetch)
 
-      log_chef(:trace, "Testing key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}")
+      log_chef(:trace) { "Testing key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}" }
       result = object.fetch(key, nil).eql?(value)
-      log_chef(:debug, "Matched key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}") if result
+      log_chef(:debug) { "Matched key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}" } if result
 
       result
     end
 
     # Call Chef::Log to log a message with the calling method appended
     #
+    # @param severity [Symbol] Log severity
+    # @param message [String] Log message
+    # @yield Lazy loaded log message
+    # @yieldreturn [String] Log message
     # @return [nil]
     #
-    def log_chef(level, message)
+    def log_chef(severity, message = nil)
+      severity_int = Mixlib::Log::Logging::LEVELS[severity]
+      level = Mixlib::Log::Logging::LEVELS[Chef::Log.level]
+
+      return if severity.nil? || (severity_int < level)
+
+      message = yield if block_given?
       calling_method = caller.find { |v| v.match?(/\.rb:\d+/) }[/`.*'/][1..-2]
-      Chef::Log.send(level, "#{calling_method}: #{message}")
+
+      Chef::Log.send(severity, "#{calling_method}: #{message}")
     end
   end
 end

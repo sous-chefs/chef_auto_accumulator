@@ -32,11 +32,11 @@ module ChefAutoAccumulator
       #
       def translate_property_key(value)
         return unless value
-        log_chef(:trace, "Original value: #{value}")
+        log_chef(:trace) { "Original value: #{value}" }
 
         result = if option_property_translation_matrix && option_property_translation_matrix.value?(value)
                    translated_value = option_property_translation_matrix.key(value)
-                   log_chef(:debug, "Translating #{value} -> #{translated_value}")
+                   log_chef(:debug) { "Translating #{value} -> #{translated_value}" }
 
                    translated_value
                  else
@@ -44,7 +44,7 @@ module ChefAutoAccumulator
                  end.dup.to_s
 
         result.gsub!(*option_property_name_gsub.reverse) if option_property_name_gsub
-        log_chef(:trace, "Resultant value: #{result}")
+        log_chef(:trace) { "Resultant value: #{result}" }
 
         result
       end
@@ -56,11 +56,11 @@ module ChefAutoAccumulator
       #
       def translate_property_value(key)
         return unless key
-        log_chef(:trace, "Original key: #{key}")
+        log_chef(:trace) { "Original key: #{key}" }
 
         result = if option_property_translation_matrix && option_property_translation_matrix.key?(key)
                    translated_key = option_property_translation_matrix.fetch(key)
-                   log_chef(:debug, "Translating #{key} -> #{translated_key}")
+                   log_chef(:debug) { "Translating #{key} -> #{translated_key}" }
 
                    translated_key
                  else
@@ -68,7 +68,7 @@ module ChefAutoAccumulator
                  end.dup.to_s
 
         result.gsub!(*option_property_name_gsub) if option_property_name_gsub
-        log_chef(:trace, "Resultant key: #{result}")
+        log_chef(:trace) { "Resultant key: #{result}" }
 
         result
       end
