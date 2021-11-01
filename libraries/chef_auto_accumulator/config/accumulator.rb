@@ -36,7 +36,7 @@ module ChefAutoAccumulator
         path_tuple = [ option_config_path_match_key, option_config_path_match_value, option_config_path_contained_key ]
 
         unless path_tuple.any? { |v| v.is_a?(Array) }
-          log_chef(:debug) { 'accumulator_config_path_contained_nested?: Config not nested' }
+          log_chef(:debug) { 'Config not nested' }
           return false
         end
 
@@ -48,7 +48,7 @@ module ChefAutoAccumulator
           raise ChefAutoAccumulator::Resource::Options::ResourceOptionMalformedError.new(resource_type_name, opt, opt_val, 'Array')
         end
 
-        log_chef(:debug) { 'accumulator_config_path_contained_nested?: Config nested' }
+        log_chef(:debug) { 'Config nested' }
         true
       rescue ChefAutoAccumulator::Resource::Options::ResourceOptionNotDefinedError
         false

@@ -133,14 +133,14 @@ module ChefAutoAccumulator
         config = load_config_file_section_item(config_file)
 
         if nil_or_empty?(config)
-          log_chef(:info) { 'load_config_file_section_contained_item: Nil or empty config, returning' }
+          log_chef(:info) { 'Nil or empty config, returning' }
           return
         end
 
         ck = accumulator_config_path_containing_key
         outer_key_config = config.fetch(ck, nil)
         if nil_or_empty?(outer_key_config)
-          log_chef(:info) { 'load_config_file_section_contained_item: Nil or empty outer_key_config, returning' }
+          log_chef(:info) { 'Nil or empty outer_key_config, returning' }
           return
         end
 
@@ -158,9 +158,7 @@ module ChefAutoAccumulator
           log_chef(:info) { "#{config_file} got Match for Filter\n#{debug_var_output(match)}\nResult\n#{debug_var_output(item)}" }
         end
 
-        log_chef(:warn) do
-          "load_config_file_section_item: Expected either one or zero filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}"
-        end unless item.one?
+        log_chef(:warn) { "Expected either one or zero filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}" } unless item.one?
 
         item.first
       end

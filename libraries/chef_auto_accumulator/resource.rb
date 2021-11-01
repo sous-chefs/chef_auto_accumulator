@@ -230,7 +230,7 @@ module ChefAutoAccumulator
     #
     def accumulator_config_array_present?
       result = !nil_or_empty?(accumulator_config_array_index)
-      log_chef(:debug) { "accumulator_config_array_present?: Result #{debug_var_output(result)}" }
+      log_chef(:debug) { "Result #{debug_var_output(result)}" }
 
       result
     end
@@ -248,13 +248,13 @@ module ChefAutoAccumulator
     # @return [true, false]
     #
     def config_template_exist?
-      log_chef(:debug) { "config_template_exist?: Checking for config file template #{new_resource.config_file}" }
+      log_chef(:debug) { "Checking for config file template #{new_resource.config_file}" }
       config_resource = !find_resource!(:template, ::File.join(new_resource.config_file)).nil?
 
-      log_chef(:debug) { "config_template_exist?: #{config_resource}" }
+      log_chef(:debug) { debug_var_output(config_resource) }
       config_resource
     rescue Chef::Exceptions::ResourceNotFound
-      log_chef(:debug) { "config_template_exist?: Config file template #{new_resource.config_file} ResourceNotFound" }
+      log_chef(:debug) { "Config file template #{new_resource.config_file} ResourceNotFound" }
       false
     end
 
