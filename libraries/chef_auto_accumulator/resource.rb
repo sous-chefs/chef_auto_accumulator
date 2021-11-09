@@ -354,12 +354,13 @@ module ChefAutoAccumulator
 
       # Initialise the parent path
       parent_path = accumulator_config_path_init(action, *path)
-      log_chef(:debug) { "Got parent path #{debug_var_output(parent_path)}" }
+      log_chef(:debug) { "Got parent path type #{debug_var_output(parent_path, false)} at #{debug_var_output(path, false)}" }
+      log_chef(:trace) { "Parent path data\n#{debug_var_output(parent_path)}" }
       return parent_path if path.all? { |p| p.is_a?(NilClass) } # Root path specified. Do we need this here?
 
       if accumulator_config_path_contained_nested?
         filter_tuple = filter_key.zip(filter_value, containing_key.slice(0...-1))
-        log_chef(:debug) { "Zipped search tuples #{debug_var_output(filter_tuple)}" }
+        log_chef(:debug) { "Zipped search tuples\n#{debug_var_output(filter_tuple)}" }
 
         # Set the initial search path
         search_object = parent_path
@@ -400,12 +401,14 @@ module ChefAutoAccumulator
     def accumulator_config_path_filter(path, key, value)
       raise "The contained parent path should respond to :filter, class #{path.class} does not" unless path.respond_to?(:filter)
 
-      log_chef(:debug) { "Filtering #{debug_var_output(path)} on #{debug_var_output(key)} | #{debug_var_output(value)}" }
+      log_chef(:debug) { "Filtering #{debug_var_output(path, false)} on #{debug_var_output(key)} | #{debug_var_output(value)}" }
+      log_chef(:trace) { "Path data\n#{debug_var_output(path)}" }
       filtered_object = path.filter { |v| v[key].eql?(value) }
 
       return if filtered_object.empty?
 
-      log_chef(:debug) { "Got filtered value #{debug_var_output(filtered_object)}" }
+      log_chef(:debug) { "Got filtered value #{debug_var_output(filtered_object, false)}" }
+      log_chef(:trace) { "Filtered value data\n#{debug_var_output(filtered_object)}" }
       raise AccumlatorConfigPathFilterError.new(key, value, path, filtered_object) unless filtered_object.one?
 
       filtered_object.first

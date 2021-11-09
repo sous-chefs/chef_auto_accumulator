@@ -71,7 +71,7 @@ module ChefAutoAccumulator
     #
     # @return [String] The formatted debug output
     #
-    def debug_var_output(var)
+    def debug_var_output(var, inspect = true)
       output = "[#{var.class}] "
       output << case var
                 when Array, Hash
@@ -80,7 +80,7 @@ module ChefAutoAccumulator
                   var.to_s.prepend(':')
                 else
                   var.to_s
-                end if var
+                end if var && inspect
 
       output.strip
     end

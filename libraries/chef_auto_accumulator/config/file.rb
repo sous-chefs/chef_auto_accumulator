@@ -38,7 +38,8 @@ module ChefAutoAccumulator
         node.run_state['caa']['load_config_file'] ||= {}
 
         if node.run_state['caa']['load_config_file'].key?(config_file) && cache
-          log_chef(:debug) { "Returning #{config_file} from cache\n#{debug_var_output(node.run_state['caa']['load_config_file'][config_file])}" }
+          log_chef(:debug) { "Returning #{config_file} from cache" }
+          log_chef(:trace) { "File #{config_file} data\n#{debug_var_output(node.run_state['caa']['load_config_file'][config_file])}" }
           return node.run_state['caa']['load_config_file'][config_file]
         end
 
@@ -62,7 +63,8 @@ module ChefAutoAccumulator
 
         path = resource_config_path
         section_config = config.dig(*path)
-        log_chef(:debug) { "#{config_file} section #{path.join(' -> ')}\n#{debug_var_output(section_config)}" }
+        log_chef(:debug) { "#{config_file} section #{path.join(' -> ')}\n#{debug_var_output(section_config, false)}" }
+        log_chef(:trace) { "#{config_file} section #{path.join(' -> ')} data\n#{debug_var_output(section_config)}" }
 
         section_config
       end
@@ -78,7 +80,8 @@ module ChefAutoAccumulator
         return if nil_or_empty?(config)
 
         match = option_config_match
-        log_chef(:debug) { "Filtering\n#{debug_var_output(match)}\n\nagainst\n\n#{debug_var_output(config)}" }
+        log_chef(:debug) { "Filtering\n#{debug_var_output(match)}\n\nagainst\n\n#{debug_var_output(config, false)}" }
+        log_chef(:trace) { "Filter data\n#{debug_var_output(config)}" }
 
         item = if accumulator_config_path_contained_nested?
                  filter_tuple = option_config_path_match_key.zip(option_config_path_match_value, option_config_path_contained_key.slice(0...-1))
