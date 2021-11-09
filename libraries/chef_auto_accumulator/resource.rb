@@ -150,7 +150,6 @@ module ChefAutoAccumulator
         # config_path is an Hash with an Array key
         # Delete indexes that match the current resource config, immediately return if the path is nil or empty
         return if nil_or_empty?(config_path)
-        option_config_match.transform_keys! { |k| translate_property_value(k) }
         option_config_match.each { |k, v| config_path[config_key].delete_if { |kdm| kdm[k].eql?(v) } }
       ###
       ## Array config_path
@@ -195,7 +194,7 @@ module ChefAutoAccumulator
     def accumulator_config_array_index
       # Get the path and match config for the resource applying any property translations
       path = resource_config_path
-      match = option_config_match.transform_keys { |k| translate_property_value(k) }
+      match = option_config_match
 
       # Find the Array index for the configuration object that matches the resource definition
       index = case option_config_path_type

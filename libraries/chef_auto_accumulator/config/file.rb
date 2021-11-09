@@ -77,11 +77,10 @@ module ChefAutoAccumulator
 
         return if nil_or_empty?(config)
 
-        match = option_config_match.transform_keys { |k| translate_property_value(k) }
+        match = option_config_match
         log_chef(:debug) { "Filtering\n#{debug_var_output(match)}\n\nagainst\n\n#{debug_var_output(config)}" }
 
         item = if accumulator_config_path_contained_nested?
-                 option_config_path_match_key.map! { |k| translate_property_value(k) }
                  filter_tuple = option_config_path_match_key.zip(option_config_path_match_value, option_config_path_contained_key.slice(0...-1))
                  log_chef(:trace) { "Zipped pairs #{debug_var_output(filter_tuple)}" }
 
@@ -145,8 +144,6 @@ module ChefAutoAccumulator
         end
 
         match = option_config_match
-        match.compact!
-        match.transform_keys! { |k| translate_property_value(k) }
         log_chef(:trace) { "Filtering against K/V pairs #{debug_var_output(match)}" }
 
         item = outer_key_config.filter { |object| match.any? { |k, v| kv_test_log(object, k, v) } }

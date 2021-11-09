@@ -95,7 +95,7 @@ module ChefAutoAccumulator
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_key', match_key) unless match_key
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_match_key', match_key, 'String', 'Symbol', 'Array') unless multi_is_a?(match_key, String, Symbol, Array)
 
-        Array(match_key)
+        Array(match_key).map { |k| translate_property_value(k) }
       end
 
       # Return the value to match the resource configuration path against
@@ -140,7 +140,7 @@ module ChefAutoAccumulator
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match', match) unless match
 
-        match
+        match.compact.transform_keys { |k| translate_property_value(k) }
       end
 
       # Return the resource configuration path override (if defined)
