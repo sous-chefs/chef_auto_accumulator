@@ -158,7 +158,7 @@ module ChefAutoAccumulator
           log_chef(:info) { "#{config_file} got Match for Filter\n#{debug_var_output(match)}\nResult\n#{debug_var_output(item)}" }
         end
 
-        log_chef(:warn) { "Expected either one or zero filtered configuration items, got #{item.count}. Data: #{debug_var_output(item)}" } unless item.one?
+        log_chef(:warn) { "Expected either one or zero filtered configuration items, got #{item.count}. Data:\n#{debug_var_output(item)}" } unless item.one?
 
         item.first
       end
