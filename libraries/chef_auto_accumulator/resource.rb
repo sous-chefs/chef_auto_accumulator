@@ -106,7 +106,10 @@ module ChefAutoAccumulator
                       :merge
                     elsif accumulator_config_array_present? && (accumulator_config_array_index.count > 1)
                       # Replace (remove duplicates if present)
-                      log_chef(:debug) { "Replacing duplicates with #{value}" }
+                      log_chef(:warn) do
+                        "Found #{accumulator_config_array_index.count} duplicate pre-existing configuration items for\n#{debug_var_output(value)}, " \
+                        "clearing and replacing duplicates at indexes #{debug_var_output(accumulator_config_array_index)}"
+                      end
                       :replace
                     else
                       raise 'Unknown push_action state'
@@ -160,9 +163,6 @@ module ChefAutoAccumulator
         when :create
           config_path.push(value)
         when :merge
-          # object = config_path.delete_at(accumulator_config_array_index.pop)
-          # object.merge!(value)
-          # config_path.push(object)
           config_path[accumulator_config_array_index.pop].merge!(value)
         when :replace
           accumulator_config_array_index.each { |i| config_path.delete_at(i) }
@@ -202,7 +202,7 @@ module ChefAutoAccumulator
                 log_chef(:debug) { "Testing :array for #{debug_var_output(match)}" }
 
                 array_path = accumulator_config_path_init(action, *path)
-                array_path.each_index.select { |i| match.any? { |k, v| kv_test_log(array_path[i], k, v) } }
+                array_path.each_with_index.select { |obj, _| match.any? { |k, v| kv_test_log(obj, k, v) } }.map(&:last)
               when :array_contained
                 ck = accumulator_config_path_containing_key
 
@@ -212,7 +212,7 @@ module ChefAutoAccumulator
                 return unless array_cpath
 
                 # Fetch the containing key and filter for any objects that match the filter
-                array_cpath.fetch(ck, []).each_index.select { |i| match.any? { |k, v| kv_test_log(array_cpath[i], k, v) } }
+                array_cpath.fetch(ck, []).each_with_index.select { |obj, _| match.any? { |k, v| kv_test_log(obj, k, v) } }.map(&:last)
               else
                 raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
               end
@@ -268,7 +268,7 @@ module ChefAutoAccumulator
 
       config_content = if new_resource.load_existing_config_file
                          existing_config_load = load_config_file(new_resource.config_file, false) || {}
-                         log_chef(:debug) { "Existing config load data: [#{existing_config_load.class}] #{existing_config_load}" }
+                         log_chef(:debug) { "Existing config load data: #{debug_var_output(existing_config_load)}" }
 
                          existing_config_load
                        else
