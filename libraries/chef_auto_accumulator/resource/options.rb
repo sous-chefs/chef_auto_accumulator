@@ -33,7 +33,7 @@ module ChefAutoAccumulator
       #
       def option_config_file_type
         type = resource_options.fetch(:config_file_type, nil)
-        log_chef(:debug) { "#{debug_var_output(type)}" }
+        log_chef(:debug) { debug_var_output(type) }
 
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_file_type', type, 'String', 'Symbol') unless multi_is_a?(type, String, Symbol)
 
@@ -46,7 +46,7 @@ module ChefAutoAccumulator
       #
       def option_config_base_path
         base = resource_options.fetch(:config_base_path, nil)
-        log_chef(:trace) { "#{debug_var_output(base)}" }
+        log_chef(:trace) { debug_var_output(base) }
 
         return unless base
 
@@ -61,7 +61,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_override
         path = resource_options.fetch(:config_path_override, nil)
-        log_chef(:trace) { "#{debug_var_output(path)}" }
+        log_chef(:trace) { debug_var_output(path) }
 
         return unless path
 
@@ -76,7 +76,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_type
         type = resource_options.fetch(:config_path_type, :hash)
-        log_chef(:trace) { "#{debug_var_output(type)}" }
+        log_chef(:trace) { debug_var_output(type) }
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_type', type) unless type
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_type', type, *ALLOWED_PATH_TYPES) unless ALLOWED_PATH_TYPES.include?(type)
@@ -90,7 +90,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_match_key
         match_key = resource_options.fetch(:config_path_match_key, nil)
-        log_chef(:trace) { "#{debug_var_output(match_key)}" }
+        log_chef(:trace) { debug_var_output(match_key) }
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_key', match_key) unless match_key
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_match_key', match_key, 'String', 'Symbol', 'Array') unless multi_is_a?(match_key, String, Symbol, Array)
@@ -104,7 +104,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_match_value
         match_value = resource_options.fetch(:config_path_match_value, nil)
-        log_chef(:trace) { "#{debug_var_output(match_value)}" }
+        log_chef(:trace) { debug_var_output(match_value) }
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_value', match_value) unless match_value
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_value', match_value) unless match_value
@@ -118,7 +118,7 @@ module ChefAutoAccumulator
       #
       def option_config_path_contained_key
         contained_key = resource_options.fetch(:config_path_contained_key, nil)
-        log_chef(:trace) { "#{debug_var_output(contained_key)}" }
+        log_chef(:trace) { debug_var_output(contained_key) }
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_contained_key', contained_key) unless contained_key
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_contained_key', contained_key, 'String', 'Symbol', 'Array') unless multi_is_a?(contained_key, String, Symbol, Array)
@@ -136,7 +136,7 @@ module ChefAutoAccumulator
       #
       def option_config_match
         match = resource_options.fetch(:config_match, nil)
-        log_chef(:trace) { "#{debug_var_output(match)}" }
+        log_chef(:trace) { debug_var_output(match) }
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match', match) unless match
 
@@ -149,7 +149,7 @@ module ChefAutoAccumulator
       #
       def option_config_properties_skip
         skip = resource_options.fetch(:config_properties_skip, nil)
-        log_chef(:trace) { "#{debug_var_output(skip)}" }
+        log_chef(:trace) { debug_var_output(skip) }
 
         return unless skip
 
@@ -164,7 +164,7 @@ module ChefAutoAccumulator
       #
       def option_property_name_gsub
         gsub = resource_options.fetch(:property_name_gsub, nil)
-        log_chef(:trace) { "#{debug_var_output(gsub)}" }
+        log_chef(:trace) { debug_var_output(gsub) }
 
         return unless gsub
         raise ResourceOptionMalformedError.new(resource_type_name, 'property_name_gsub', property_name_gsub, 'Array of 2 String') unless gsub.is_a?(Array) &&
@@ -180,12 +180,29 @@ module ChefAutoAccumulator
       #
       def option_property_translation_matrix
         matrix = resource_options.fetch(:property_translation_matrix, nil)
-        log_chef(:trace) { "#{debug_var_output(matrix)}" }
+        log_chef(:trace) { debug_var_output(matrix) }
 
         return unless matrix
         raise ResourceOptionMalformedError.new(resource_type_name, 'property_translation_matrix', matrix, 'Hash') unless matrix.is_a?(Hash)
 
         matrix
+      end
+
+      # Permit nil properties values if set, otherwise they will be compacted out by the resource
+      # Useful for mutually extensive properties when it is desired that values be removed immediately when they are not declared on the resource.
+      # Without this an explicit delete action would be required to removed them.
+      #
+      # @return [TrueClass, FalseClass] Permit nil property setting or nil if not defined
+      #
+      def option_permit_nil_properties
+        permit = resource_options.fetch(:permit_nil_properties, nil)
+        log_chef(:trace) { debug_var_output(permit) }
+
+        return unless permit
+        raise ResourceOptionMalformedError.new(resource_type_name, 'permit_nil_properties', permit, 'TrueClass', 'FalseClass') unless permit.is_a?(TrueClass) ||
+                                                                                                                                      permit.is_a?(FalseClass)
+
+        permit
       end
 
       # Get the actual resource options for the resource (if defined)
