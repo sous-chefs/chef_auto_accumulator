@@ -74,7 +74,7 @@ module ChefAutoAccumulator
     # @param value [any] Value to assign to key
     # @return [nil]
     #
-    def accumulator_config(action:, key: nil, value: nil)
+    def accumulator_config(action:, key: nil, value: nil, force_replace: false)
       path = resource_config_path
       config_path = case option_config_path_type
                     when :hash, :hash_contained, :array
@@ -98,13 +98,13 @@ module ChefAutoAccumulator
       ###
       push_action = if !accumulator_config_array_present?
                       # Create
-                      log_chef(:debug) { "Create Array and push #{value}" }
+                      log_chef(:info) { "Create Array and push #{value}" }
                       :create
-                    elsif accumulator_config_array_present? && accumulator_config_array_index.one? && value.respond_to?(:merge)
+                    elsif accumulator_config_array_present? && accumulator_config_array_index.one? && value.respond_to?(:merge) && !force_replace
                       # Merge with existing
-                      log_chef(:debug) { "Merge #{value} with existing" }
+                      log_chef(:info) { "Merge #{value} with existing" }
                       :merge
-                    elsif accumulator_config_array_present? && (accumulator_config_array_index.count > 1)
+                    elsif (accumulator_config_array_present? && (accumulator_config_array_index.count > 1)) || force_replace
                       # Replace (remove duplicates if present)
                       log_chef(:warn) do
                         "Found #{accumulator_config_array_index.count} duplicate pre-existing configuration items for\n#{debug_var_output(value)}, " \
