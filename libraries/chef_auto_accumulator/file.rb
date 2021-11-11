@@ -35,16 +35,10 @@ module ChefAutoAccumulator
     SUPPORTED_TYPES = %i(INI JSON JSONC TOML YAML).freeze
 
     # Enumerable deep clean proc
-    ENUM_DEEP_CLEAN = proc do |k, v|
-      if v.nil?
-        # Array
-        k.delete_if(&ENUM_DEEP_CLEAN) if k.respond_to?(:delete_if)
-        nil_or_empty?(k) && !v.is_a?(String)
-      else
-        # Hash
-        v.delete_if(&ENUM_DEEP_CLEAN) if v.respond_to?(:delete_if)
-        nil_or_empty?(v) && !v.is_a?(String)
-      end
+    ENUM_DEEP_CLEAN = proc do |*args|
+      v = args.last
+      v.delete_if(&ENUM_DEEP_CLEAN) if v.respond_to?(:delete_if)
+      nil_or_empty?(v) && !v.is_a?(String)
     end
 
     # Get the specified file type from the resource options
