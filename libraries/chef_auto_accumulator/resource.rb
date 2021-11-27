@@ -72,7 +72,8 @@ module ChefAutoAccumulator
     # @param action [Symbol] Config action to perform
     # @param key [String, Symbol] The key to manipulate
     # @param value [any] Value to assign to key
-    # @return [nil]
+    # @param force_replace [TrueClass, FalseClass] Force replacement of the configuration object
+    # @return [Array, Hash] The resultant configuration
     #
     def accumulator_config(action:, key: nil, value: nil, force_replace: false)
       path = resource_config_path
