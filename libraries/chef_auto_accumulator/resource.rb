@@ -42,6 +42,8 @@ module ChefAutoAccumulator
       filemode
       sensitive
       extra_options
+      clean_unset
+      force_replace
     ).freeze
     private_constant :GLOBAL_CONFIG_PROPERTIES_SKIP
 
@@ -75,7 +77,7 @@ module ChefAutoAccumulator
     # @param force_replace [TrueClass, FalseClass] Force replacement of the configuration object
     # @return [Array, Hash] The resultant configuration
     #
-    def accumulator_config(action:, key: nil, value: nil, force_replace: false)
+    def accumulator_config(action:, key: nil, value: nil, force_replace: false, clean_unset: false)
       path = resource_config_path
       config_path = case option_config_path_type
                     when :hash, :hash_contained, :array
@@ -140,7 +142,9 @@ module ChefAutoAccumulator
           config_path[config_key] ||= []
           config_path[config_key].push(value)
         when :merge
-          config_path[config_key][accumulator_config_array_index.pop].merge!(value)
+          index = accumulator_config_array_index.pop
+          config_path[config_key][index].merge!(value)
+          config_path[config_key][index].delete_if { |k, _| !value.keys.include?(k) } if clean_unset
         when :replace
           accumulator_config_array_index.each { |i| config_path[config_key].delete_at(i) }
           config_path[config_key].push(value)
@@ -164,7 +168,9 @@ module ChefAutoAccumulator
         when :create
           config_path.push(value)
         when :merge
-          config_path[accumulator_config_array_index.pop].merge!(value)
+          index = accumulator_config_array_index.pop
+          config_path[index].merge!(value)
+          config_path[index].delete_if { |k, _| !value.keys.include?(k) } if clean_unset
         when :replace
           accumulator_config_array_index.each { |i| config_path.delete_at(i) }
           config_path.push(value)
