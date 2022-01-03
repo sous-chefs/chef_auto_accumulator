@@ -1,7 +1,12 @@
-# CHANGELOG for chef_auto_accumulator
+# CHANGELOG
 
-This file is used to list changes made in each version of chef_auto_accumulator.
+## chef_auto_accumulator
 
 ## 0.1.0
 
-- Initial release
+- Initial release version
+- Automatic accumulation and test/set of:
+  - INI
+  - JSON
+  - TOML
+  - YAML
