@@ -50,9 +50,9 @@ module ChefAutoAccumulator
       # @return [String, Array<String>] Actual configuration path for resource
       #
       def resource_config_path
-        return resource_default_config_path unless option_config_path_override
+        # return resource_default_config_path unless option_config_path_override
 
-        option_config_path_override
+        option_config_path_override || resource_default_config_path
       end
     end
   end
