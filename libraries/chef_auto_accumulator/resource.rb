@@ -45,7 +45,10 @@ module ChefAutoAccumulator
       clean_unset
       force_replace
     ).freeze
-    private_constant :GLOBAL_CONFIG_PROPERTIES_SKIP
+
+    FILE_SUPPORTING_GEMS = %w(deepsort inifile toml-rb).freeze
+
+    private_constant :GLOBAL_CONFIG_PROPERTIES_SKIP, :FILE_SUPPORTING_GEMS
 
     private
 
@@ -295,9 +298,7 @@ module ChefAutoAccumulator
                        end
 
       with_run_context(:root) do
-        declare_resource(:chef_gem, 'deepsort') { compile_time true } unless gem_installed?('deepsort')
-        declare_resource(:chef_gem, 'inifile') { compile_time true } unless gem_installed?('inifile')
-        declare_resource(:chef_gem, 'toml-rb') { compile_time true } unless gem_installed?('toml-rb')
+        FILE_SUPPORTING_GEMS.each { |gem| declare_resource(:chef_gem, gem) { compile_time true } unless gem_installed?(gem) }
 
         declare_resource(:template, new_resource.config_file) do
           source new_resource.source
@@ -375,7 +376,11 @@ module ChefAutoAccumulator
       parent_path = accumulator_config_path_init(action, *path)
       log_chef(:debug) { "Got parent path type #{debug_var_output(parent_path, false)} at #{debug_var_output(path, false)}" }
       log_chef(:trace) { "Parent path data\n#{debug_var_output(parent_path)}" }
-      return parent_path if path.all? { |p| p.is_a?(NilClass) } # Root path specified. Do we need this here?
+
+      if path.all? { |p| p.is_a?(NilClass) } # Root path specified. Do we need this here?
+        log_chef(:warn) { "!!! Root path specified for path #{debug_var_output(path)}. Do we need this here?" }
+        return parent_path
+      end
 
       if accumulator_config_path_contained_nested?
         filter_tuple = filter_key.zip(filter_value, containing_key.slice(0...-1))
@@ -387,6 +392,8 @@ module ChefAutoAccumulator
         while (k, v, ck = filter_tuple.shift)
           search_path_log = "Searching path #{debug_var_output(search_object)} for Key: #{debug_var_output(k)} | Value: #{debug_var_output(v)}"
           search_path_log.concat(" | Containing Key: #{debug_var_output(ck)}") if ck
+          log_chef(:info) { search_path_log }
+
           break if search_object.nil?
 
           # Filter the containing Array objects
