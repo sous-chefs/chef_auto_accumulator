@@ -69,6 +69,18 @@ module ChefAutoAccumulator
       properties
     end
 
+    # Return a Hash of the resources set property key/values
+    #
+    # @return [Hash] Hash map of resource property key/values
+    #
+    def resource_properties_map
+      map = resource_properties.map { |rp| [translate_property_value(rp), new_resource.send(rp)] }.to_h
+      map.compact! unless option_permit_nil_properties
+
+      log_chef(:debug) { "Property map for #{resource_type_name}: #{map}" }
+      map
+    end
+
     # Add/remove/overwrite/delete accumulator config values
     #
     # @param action [Symbol] Config action to perform
