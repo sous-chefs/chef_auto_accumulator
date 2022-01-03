@@ -116,20 +116,24 @@ end
 
 action :create do
   converge_if_changed do
-    # Generate configuration Hash from properties
-    map = resource_properties.map do |rp|
-      next if new_resource.send(rp).nil?
-
-      [translate_property_value(rp), new_resource.send(rp)]
-    end.compact.to_h if %i(array array_contained hash_contained).include?(option_config_path_type)
-
     # Perform accumulator configuration action
     case option_config_path_type
     when :array
-      accumulator_config(action: :array_push, value: map)
+      accumulator_config(
+        action: :array_push,
+        value: resource_properties_map,
+        force_replace: new_resource.force_replace,
+        clean_unset: new_resource.clean_unset
+      )
     when :array_contained
       ck = accumulator_config_path_containing_key
-      accumulator_config(action: :key_push, key: ck, value: map)
+      accumulator_config(
+        action: :key_push,
+        key: ck,
+        value: resource_properties_map,
+        force_replace: new_resource.force_replace,
+        clean_unset: new_resource.clean_unset
+      )
     when :hash
       resource_properties.each do |rp|
         next if new_resource.send(rp).nil?
@@ -139,7 +143,7 @@ action :create do
 
       new_resource.extra_options.each { |key, value| accumulator_config(:set, key, value) } if property_is_set?(:extra_options)
     when :hash_contained
-      accumulator_config(action: :set, key: option_config_path_contained_key, value: map)
+      accumulator_config(action: :set, key: option_config_path_contained_key, value: resource_properties_map)
     else
       raise "Unknown config path type #{debug_var_output(option_config_path_type)}"
     end
