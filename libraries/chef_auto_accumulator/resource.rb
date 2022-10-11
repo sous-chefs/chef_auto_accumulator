@@ -22,12 +22,14 @@ require_relative 'config'
 require_relative 'file'
 
 require_relative 'resource/options'
+require_relative 'resource/property'
 require_relative 'resource/property_translation'
 
 module ChefAutoAccumulator
   # Module for inclusion in automatic accumulator resources
   module Resource
     include ChefAutoAccumulator::Resource::Options
+    include ChefAutoAccumulator::Resource::Property
     include ChefAutoAccumulator::Resource::PropertyTranslation
 
     # List of properties to skip for all resources
