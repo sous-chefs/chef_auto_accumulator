@@ -53,6 +53,14 @@ property :filemode, String,
 property :extra_options, Hash,
           coerce: proc { |p| p.transform_keys(&:to_s) }
 
+property :force_replace, [true, false],
+          default: false,
+          desired_state: false
+
+property :clean_nil_values, [true, false],
+          default: false,
+          desired_state: false
+
 load_current_value do |new_resource|
   if resource_properties.all? { |rp| nil_or_empty?(new_resource.send(rp)) }
     Chef::Log.warn('No properties are set, skipping load_current_value. Should this resource exist?')
