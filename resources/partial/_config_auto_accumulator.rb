@@ -130,8 +130,7 @@ action :create do
       accumulator_config(
         action: :array_push,
         value: resource_properties_map,
-        force_replace: new_resource.force_replace,
-        clean_unset: new_resource.clean_unset
+        force_replace: new_resource.force_replace
       )
     when :array_contained
       ck = accumulator_config_path_containing_key
@@ -139,8 +138,7 @@ action :create do
         action: :key_push,
         key: ck,
         value: resource_properties_map,
-        force_replace: new_resource.force_replace,
-        clean_unset: new_resource.clean_unset
+        force_replace: new_resource.force_replace
       )
     when :hash
       resource_properties.each do |rp|
