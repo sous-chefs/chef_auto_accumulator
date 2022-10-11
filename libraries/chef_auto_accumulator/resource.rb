@@ -46,6 +46,7 @@ module ChefAutoAccumulator
       extra_options
       clean_unset
       force_replace
+      clean_nil_values
     ).freeze
 
     FILE_SUPPORTING_GEMS = %w(deepsort inifile toml-rb).freeze

@@ -195,7 +195,7 @@ module ChefAutoAccumulator
       # @return [TrueClass, FalseClass] Permit nil property setting or nil if not defined
       #
       def option_permit_nil_properties
-        permit = resource_options.fetch(:permit_nil_properties, nil)
+        permit = resource_options.fetch(:permit_nil_properties, nil) || resource_property(:clean_nil_values)
         log_chef(:trace) { debug_var_output(permit) }
 
         return unless permit
