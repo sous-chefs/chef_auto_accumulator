@@ -83,7 +83,7 @@ module ChefAutoAccumulator
       map = resource_properties.map { |rp| [translate_property_value(rp), new_resource.send(rp)] }.to_h
       map.compact! unless option_permit_nil_properties
 
-      log_chef(:debug) { "Property map for #{resource_type_name}: #{map}" }
+      log_chef(:info) { "Property map for #{resource_type_name}: #{debug_var_output(map)}" }
       map
     end
 
