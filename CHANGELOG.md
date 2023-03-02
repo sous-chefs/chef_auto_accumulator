@@ -1,6 +1,10 @@
-# CHANGELOG
+# certificate Cookbook CHANGELOG
 
-## chef_auto_accumulator
+This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
+
+## Unreleased
+
+- Add CI pipeline
 
 ## 0.1.0
 
