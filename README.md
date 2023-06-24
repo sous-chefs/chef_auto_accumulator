@@ -8,8 +8,7 @@ This cookbook is maintained by the Sous Chefs. The Sous Chefs are a community of
 
 ## Change Log
 
-- See [CHANGELOG.md](/CHANGELOG.md) for version details and changes.
-
+- See [CHANGELOG.md](./CHANGELOG.md) for version details and changes.
 
 ## Requirements
 
