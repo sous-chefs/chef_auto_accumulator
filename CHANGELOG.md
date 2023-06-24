@@ -2,7 +2,7 @@
 
 This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
 
-## Unreleased
+## 0.4.0 - *2023-06-24*
 
 - Add CI pipeline
 - Initial release to supermarket
