@@ -23,5 +23,5 @@ module ChefAutoAccumulator
 
   # Library version, taken from the cookbook metadata
   VERSION = cookbook_metadata.version.dup.freeze
-  Chef::Log.info("ChefAutoAccumulator v#{VERSION} loaded.")
+  Chef::Log.warn("ChefAutoAccumulator v#{VERSION} loaded.")
 end

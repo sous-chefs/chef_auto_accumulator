@@ -22,10 +22,19 @@ module ChefAutoAccumulator
     # Resource property Hash accessor method and option value retrieval convience methods
     module Options
       # List of allowed accumulated configuration path types
-      ALLOWED_PATH_TYPES = %i(hash hash_contained array array_contained).freeze
+      ALLOWED_PATH_TYPES = %i(hash hash_contained array array_contained array_contained_hash).freeze
       private_constant :ALLOWED_PATH_TYPES
 
       private
+
+      def option_config_file
+        file = resource_property(:config_file)
+        log_chef(:debug) { debug_var_output(file) }
+
+        raise ResourceOptionMalformedError.new(resource_type_name, 'config_file', file, 'String') unless multi_is_a?(file, String)
+
+        file
+      end
 
       # Return the configuration file type from resource options
       #
@@ -110,7 +119,9 @@ module ChefAutoAccumulator
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_key', match_key) unless match_key
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_match_key', match_key, 'String', 'Symbol', 'Array') unless multi_is_a?(match_key, String, Symbol, Array)
 
-        Array(match_key).map { |k| translate_property_value(k) }
+        match_key = Array(match_key).map { |k| translate_property_value(k) }
+        # match_key.one? ? match_key.pop : match_key
+        match_key
       end
 
       # Return the value to match the resource configuration path against
@@ -122,9 +133,9 @@ module ChefAutoAccumulator
         log_chef(:trace) { debug_var_output(match_value) }
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_value', match_value) unless match_value
-        raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_match_value', match_value) unless match_value
+        raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_match_value', match_key, 'String', 'Symbol', 'Array') unless multi_is_a?(match_value, String, Symbol, Array)
 
-        match_value.is_a?(Array) ? match_value : [ match_value ]
+        match_value
       end
 
       # Return the key to store the contained configuration in on the filtered configuration path object
@@ -138,11 +149,7 @@ module ChefAutoAccumulator
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_path_contained_key', contained_key) unless contained_key
         raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_contained_key', contained_key, 'String', 'Symbol', 'Array') unless multi_is_a?(contained_key, String, Symbol, Array)
 
-        if option_config_path_type.eql?(:array_contained)
-          Array(contained_key)
-        else
-          contained_key
-        end
+        option_config_path_type.eql?(:array_contained) ? Array(contained_key) : contained_key
       end
 
       # Return the key/value pairs to match the resource configuration against for load_current_value
@@ -154,6 +161,7 @@ module ChefAutoAccumulator
         log_chef(:trace) { debug_var_output(match) }
 
         raise ResourceOptionNotDefinedError.new(resource_type_name, 'config_match', match) unless match
+        raise ResourceOptionMalformedError.new(resource_type_name, 'config_match', match, 'Proc', 'Hash') unless multi_is_a?(match, Proc, Hash)
 
         match.compact.transform_keys { |k| translate_property_value(k) }
       end

@@ -17,18 +17,20 @@
 # limitations under the License.
 #
 
-require_relative 'chef_auto_accumulator/version'
 require_relative 'chef_auto_accumulator/_utils'
+require_relative 'chef_auto_accumulator/version'
 require_relative 'chef_auto_accumulator/error'
 
 require_relative 'chef_auto_accumulator/config'
 require_relative 'chef_auto_accumulator/file'
 require_relative 'chef_auto_accumulator/resource'
+require_relative 'chef_auto_accumulator/state'
 
 # Base namespace to include for automatic accumulator functionality
 module ChefAutoAccumulator
   include ChefAutoAccumulator::Config
   include ChefAutoAccumulator::File
   include ChefAutoAccumulator::Resource
+  include ChefAutoAccumulator::State
   include ChefAutoAccumulator::Utils
 end
