@@ -29,7 +29,7 @@ module ChefAutoAccumulator
                 elsif action_class? && new_resource.respond_to?(name)
                   new_resource.send(name)
                 end
-        log_chef(:info) { "Got value for property #{name}: #{debug_var_output(value)}" }
+        log_chef(:trace) { "Got value for property #{name}: #{debug_var_output(value)}" }
 
         value
       end
