@@ -51,22 +51,6 @@ module ChefAutoAccumulator
       instance_variable_defined?(:@new_resource)
     end
 
-    # Return the resource declared name
-    #
-    # @return [String]
-    #
-    def resource_declared_name
-      instance_variable_defined?(:@new_resource) ? new_resource.name : name
-    end
-
-    # Return the resource declared type name
-    #
-    # @return [String]
-    #
-    def resource_type_name
-      instance_variable_defined?(:@new_resource) ? new_resource.declared_type.to_s : resource_name.to_s
-    end
-
     # Return the formatted class name and value (if not Nil) of a variable for debug output
     #
     # @return [String] The formatted debug output
@@ -81,6 +65,8 @@ module ChefAutoAccumulator
                 else
                   var.to_s
                 end if var && inspect
+
+      output << "-- (Inspect disabled)" unless inspect
 
       output.strip
     end
@@ -102,12 +88,12 @@ module ChefAutoAccumulator
     # @param value [Any] Value to test against
     # @return [true, false]
     #
-    def kv_test_log(object, key, value)
+    def kv_test(object, key, value, log: true)
       return false unless object.respond_to?(:fetch)
 
-      log_chef(:trace) { "Testing key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}" }
+      log_chef(:trace) { "Testing key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}" } if log
       result = object.fetch(key, nil).eql?(value)
-      log_chef(:debug) { "Matched key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}" } if result
+      log_chef(:debug) { "Matched key #{debug_var_output(key)} and value #{debug_var_output(value)} against object #{debug_var_output(object)}" } if log && result
 
       result
     end

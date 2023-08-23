@@ -129,7 +129,7 @@ action :create do
     when :array
       accumulator_config(
         action: :array_push,
-        value: resource_properties_map,
+        value: resource_properties_mapped,
         force_replace: new_resource.force_replace
       )
     when :array_contained
@@ -137,7 +137,7 @@ action :create do
       accumulator_config(
         action: :key_push,
         key: ck,
-        value: resource_properties_map,
+        value: resource_properties_mapped,
         force_replace: new_resource.force_replace
       )
     when :hash
@@ -149,7 +149,7 @@ action :create do
 
       new_resource.extra_options.each { |key, value| accumulator_config(:set, key, value) } if property_is_set?(:extra_options)
     when :hash_contained
-      accumulator_config(action: :set, key: option_config_path_contained_key, value: resource_properties_map)
+      accumulator_config(action: :set, key: option_config_path_contained_key, value: resource_properties_mapped)
     else
       raise "Unknown config path type #{debug_var_output(option_config_path_type)}"
     end
