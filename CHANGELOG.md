@@ -2,7 +2,7 @@
 
 This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
 
-## Unreleased
+## 0.4.3 - *2024-05-06*
 
 ## 0.4.2 - *2024-05-06*
 
