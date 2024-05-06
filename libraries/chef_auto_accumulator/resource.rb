@@ -165,6 +165,8 @@ module ChefAutoAccumulator
           accumulator_config_array_index.each { |i| config_path[config_key].delete_at(i) }
           config_path[config_key].push(value)
         end
+
+        config_path.sort_by! { |v| v.send(*option_config_path_sort_function) } if option_config_path_sort_function
       when :key_delete
         # config_path is an Hash with an Array key
         # Delete matched indexes from key, immediately return if the path is nil or empty
@@ -190,6 +192,8 @@ module ChefAutoAccumulator
           accumulator_config_array_index.each { |i| config_path.delete_at(i) }
           config_path.push(value)
         end
+
+        config_path.sort_by! { |v| v.send(*option_config_path_sort_function) } if option_config_path_sort_function
       when :array_delete
         # config_path is an Array
         accumulator_config_array_index.each { |i| config_path.delete_at(i) } if accumulator_config_array_present?

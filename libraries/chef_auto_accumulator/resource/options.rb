@@ -84,6 +84,21 @@ module ChefAutoAccumulator
         type
       end
 
+      # Return the resource configuration path sort by method
+      #
+      # @return [Array<Any>]
+      #
+      def option_config_path_sort_function
+        sort_function = resource_options.fetch(:config_path_sort_function, nil)
+        log_chef(:trace) { debug_var_output(sort_function) }
+
+        return unless sort_function
+
+        raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_sort_function', sort_function, 'Array') unless sort_function.is_a?(Array)
+
+        sort_function
+      end
+
       # Return the key to match the resource configuration path against
       #
       # @return [Symbol, String, Array] Path type
