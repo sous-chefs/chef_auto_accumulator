@@ -42,6 +42,7 @@ module ChefAutoAccumulator
       owner
       group
       filemode
+      sort
       sensitive
       extra_options
       force_replace
@@ -317,6 +318,7 @@ module ChefAutoAccumulator
           variables({
             content: config_content,
             file_type: config_file_type,
+            sort: new_resource.sort
           })
 
           helpers(ChefAutoAccumulator::File)
