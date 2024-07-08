@@ -2,7 +2,7 @@
 
 This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
 
-## Unreleased
+## 0.5.0 - *2024-07-08*
 
 - Add an option to sort Array configuration values
 
