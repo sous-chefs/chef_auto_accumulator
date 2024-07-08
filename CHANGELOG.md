@@ -5,6 +5,7 @@ This file is used to list changes made in each version of the chef_auto_accumula
 ## Unreleased
 
 - Expose the `:file_string` method sort parameter
+- Perform per-resource sorting on delete
 
 ## 0.5.0 - *2024-07-08*
 

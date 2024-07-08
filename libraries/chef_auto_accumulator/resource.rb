@@ -71,7 +71,8 @@ module ChefAutoAccumulator
         properties.reject! { |p| option_config_properties_skip.include?(p) }
       end
 
-      log_chef(:debug) { "Resultant filtered properties for #{resource_type_name}: #{properties.sort.join(', ')}" }
+      properties.sort!
+      log_chef(:debug) { "Resultant filtered properties for #{resource_type_name}: #{properties.join(', ')}" }
       properties
     end
 
@@ -167,17 +168,19 @@ module ChefAutoAccumulator
           config_path[config_key].push(value)
         end
 
-        config_path.sort_by! { |v| v.send(*option_config_path_sort_function) } if option_config_path_sort_function
+        accumulator_config_collection_sort(config_path.fetch(config_key), option_config_path_sort_keys) if option_config_path_sort_keys
       when :key_delete
         # config_path is an Hash with an Array key
         # Delete matched indexes from key, immediately return if the path is nil or empty
         return if nil_or_empty?(config_path[config_key])
         accumulator_config_array_index.each { |i| config_path[config_key].delete_at(i) } if accumulator_config_array_present?
+        accumulator_config_collection_sort(config_path.fetch(config_key), option_config_path_sort_keys) if option_config_path_sort_keys
       when :key_delete_match_self
         # config_path is an Hash with an Array key
         # Delete indexes that match the current resource config, immediately return if the path is nil or empty
         return if nil_or_empty?(config_path)
         option_config_match.each { |k, v| config_path[config_key].delete_if { |kdm| kdm[k].eql?(v) } }
+        accumulator_config_collection_sort(config_path.fetch(config_key), option_config_path_sort_keys) if option_config_path_sort_keys
       ###
       ## Array config_path
       ###
@@ -194,10 +197,12 @@ module ChefAutoAccumulator
           config_path.push(value)
         end
 
-        config_path.sort_by! { |v| v.send(*option_config_path_sort_function) } if option_config_path_sort_function
+        accumulator_config_collection_sort(config_path, option_config_path_sort_keys) if option_config_path_sort_keys
       when :array_delete
         # config_path is an Array
         accumulator_config_array_index.each { |i| config_path.delete_at(i) } if accumulator_config_array_present?
+
+        accumulator_config_collection_sort(config_path, option_config_path_sort_keys) if option_config_path_sort_keys
       else
         raise ArgumentError, "Unsupported accumulator config action #{action}"
       end
@@ -212,6 +217,32 @@ module ChefAutoAccumulator
       log_chef(:debug) { "Resultant configuration #{debug_var_output(resultant_config)}" }
 
       resultant_config
+    end
+
+    # Sort an accumulator collection
+    #
+    # @param collection [Array<String>, Array<Integer>, Array<Hash>] The configuration collection to be sorted
+    # @param sort_keys [Array<String>, Array<Symbol>] The key(s) to sort by, first match wins
+    # @return nil
+    #
+    def accumulator_config_collection_sort(collection, sort_keys = nil)
+      if collection.all? { |ci| ci.is_a?(Hash) }
+        raise ArgumentError "Expected array of sort_keys, got #{debug_var_output(sort_keys)}" unless sort_keys.is_a?(Array)
+
+        sort_key = sort_keys.map { |sk| translate_property_value(sk) }.filter { |sk| collection.all? { |ci| ci.key?(sk) } }.first
+        if nil_or_empty?(sort_key)
+          log_chef(:error) { "Unable to find common sort key from #{sort_keys.join(',')} for collection #{debug_var_output(collection)}" }
+          return
+        end
+
+        collection.sort_by! { |ci| ci.fetch(sort_key) }
+      elsif collection.all? { |ci| multi_is_a?(ci, Integer, String) }
+        collection.sort!
+      else
+        log_chef(:warn) { "Unable to sort collection #{debug_var_output(collection)}" }
+      end
+
+      nil
     end
 
     # Get the index for the configuration item within an Array if it exists
@@ -263,6 +294,7 @@ module ChefAutoAccumulator
 
     # Check if a given configuration path contains the configuration for this resource
     #
+    # @param key [String, Symbol] The key to search for
     # @return [true, false]
     #
     def accumulator_config_present?(key)
@@ -318,7 +350,7 @@ module ChefAutoAccumulator
           variables({
             content: config_content,
             file_type: config_file_type,
-            sort: new_resource.sort
+            sort: new_resource.sort,
           })
 
           helpers(ChefAutoAccumulator::File)
