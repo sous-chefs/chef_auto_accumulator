@@ -89,10 +89,10 @@ module ChefAutoAccumulator
     # @param type [Symbol] The file type to save
     # @return [String] Formatted output
     #
-    def save_file(file, type = config_file_type)
-      log_chef(:debug) { "Sending :save_file to module #{type} with file #{file}" }
+    def save_file(file, type = config_file_type, sort = true)
+      log_chef(:debug) { "Sending :save_file to module #{type} with file #{file} and sort #{debug_var_output(sort)}" }
 
-      ChefAutoAccumulator::File.const_get(type).send(:file_string, file)
+      ChefAutoAccumulator::File.const_get(type).send(:file_string, file, sort)
     end
   end
 end

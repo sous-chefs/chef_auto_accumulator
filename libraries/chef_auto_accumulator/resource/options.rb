@@ -88,15 +88,15 @@ module ChefAutoAccumulator
       #
       # @return [Array<Any>]
       #
-      def option_config_path_sort_function
-        sort_function = resource_options.fetch(:config_path_sort_function, nil)
-        log_chef(:trace) { debug_var_output(sort_function) }
+      def option_config_path_sort_keys
+        sort_keys = resource_options.fetch(:config_path_sort_keys, nil)
+        log_chef(:trace) { debug_var_output(sort_keys) }
 
-        return unless sort_function
+        return unless sort_keys
 
-        raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_sort_function', sort_function, 'Array') unless sort_function.is_a?(Array)
+        raise ResourceOptionMalformedError.new(resource_type_name, 'config_path_sort_keys', sort_keys, 'Array') unless sort_keys.is_a?(Array)
 
-        sort_function
+        sort_keys
       end
 
       # Return the key to match the resource configuration path against
