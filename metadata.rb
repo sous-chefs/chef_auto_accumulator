@@ -17,6 +17,6 @@ supports 'redhat'
 supports 'scientific'
 supports 'ubuntu'
 
-gem 'deepsort', '~> 0.4.5'
+gem 'deepsort', '~> 0.5'
 gem 'inifile', '~> 3.0'
-gem 'toml-rb', '~> 2.0'
+gem 'toml-rb', '~> 2.2'
