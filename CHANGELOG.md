@@ -2,7 +2,7 @@
 
 This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
 
-## Unreleased
+## 0.6.0 - *2024-07-09*
 
 - Expose the `:file_string` method sort parameter
 - Perform per-resource sorting on delete
