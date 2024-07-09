@@ -21,7 +21,7 @@ require_relative 'options'
 
 module ChefAutoAccumulator
   module Resource
-    # Methods for translating Chef property names to configuration file property and vice-versa
+    # Methods for translating Chef property names to configuration file property names and vice-versa
     module PropertyTranslation
       private
 
