@@ -2,6 +2,8 @@
 
 This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
 
+## Unreleased
+
 ## 0.6.1 - *2024-07-09*
 
 - Bump gem dependency versions
