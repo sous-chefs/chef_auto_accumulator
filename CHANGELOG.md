@@ -4,6 +4,8 @@ This file is used to list changes made in each version of the chef_auto_accumula
 
 ## Unreleased
 
+- Refactor config item matching
+
 ## 0.6.1 - *2024-07-09*
 
 - Bump gem dependency versions
