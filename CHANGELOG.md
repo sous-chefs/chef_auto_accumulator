@@ -2,6 +2,8 @@
 
 This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
 
+## Unreleased
+
 ## 0.7.0 - *2024-12-20*
 
 - Refactor config item matching
