@@ -33,4 +33,7 @@ module ChefAutoAccumulator
       ].join("\n\n"))
     end
   end
+
+  class FileError < BaseError
+  end
 end

@@ -48,12 +48,27 @@ module ChefAutoAccumulator
       force_replace
       clean_nil_values
     ).freeze
-
     FILE_SUPPORTING_GEMS = %w(deepsort inifile toml-rb).freeze
 
     private_constant :GLOBAL_CONFIG_PROPERTIES_SKIP, :FILE_SUPPORTING_GEMS
 
     private
+
+    # Return the resource declared name
+    #
+    # @return [String]
+    #
+    def resource_declared_name
+      instance_variable_defined?(:@new_resource) ? new_resource.name : name
+    end
+
+    # Return the resource declared type name
+    #
+    # @return [String]
+    #
+    def resource_type_name
+      instance_variable_defined?(:@new_resource) ? new_resource.declared_type.to_s : resource_name.to_s
+    end
 
     # Enumerate the properties of the including resource
     # Properties are skipped globally via the constant GLOBAL_CONFIG_PROPERTIES_SKIP
@@ -77,12 +92,19 @@ module ChefAutoAccumulator
     end
 
     # Return a Hash of the resources set property key/values
+    # Property values are translated if required
     #
     # @return [Hash] Hash map of resource property key/values
     #
-    def resource_properties_map
+    def resource_properties_mapped(include_nil: false)
       map = resource_properties.map { |rp| [translate_property_value(rp), new_resource.send(rp)] }.to_h
-      map.compact! unless option_permit_nil_properties
+
+      if property_is_set?(:extra_options)
+        log_chef(:debug, "Extra options are set, merging into property map")
+        map.merge!(new_resource.extra_options.dup)
+      end
+
+      map.compact! unless include_nil || option_permit_nil_properties
 
       log_chef(:info) { "Property map for #{resource_type_name}: #{debug_var_output(map)}" }
       map
@@ -101,7 +123,7 @@ module ChefAutoAccumulator
       config_path = case option_config_path_type
                     when :hash, :hash_contained, :array
                       accumulator_config_path_init(action, *path)
-                    when :array_contained
+                    when :array_contained, :array_contained_hash
                       accumulator_config_containing_path_init(action: action, path: path)
                     else
                       raise ArgumentError, "Unknown config path type #{debug_var_output(option_config_path_type)}"
@@ -149,11 +171,16 @@ module ChefAutoAccumulator
         config_path[config_key] = value
       when :delete
         # config_path is a Hash
+        log_chef(:info) { "Delete before: #{config_path}" }
         config_path.delete(config_key) if config_path.key?(config_key)
+        log_chef(:info) { "Delete after: #{config_path}" }
       when :append
         # config_path is a Hash with a String key
         config_path[config_key] ||= ''
         config_path[config_key].concat(value.to_s) unless config_path[config_key].match?(value)
+      when :clear
+        return unless config_path
+        config_path.clear
       when :key_push
         # config_path is an Hash with an Array key
         case push_action
@@ -204,16 +231,11 @@ module ChefAutoAccumulator
 
         accumulator_config_collection_sort(config_path, option_config_path_sort_keys) if option_config_path_sort_keys
       else
-        raise ArgumentError, "Unsupported accumulator config action #{action}"
+        raise ArgumentError, "Unsupported accumulator config action: #{debug_var_output(action)}"
       end
 
       # Return and log resultant configuration
-      resultant_config = if key
-                           config_path[config_key]
-                         else
-                           config_path
-                         end
-
+      resultant_config = key ? config_path[config_key] : config_path
       log_chef(:debug) { "Resultant configuration #{debug_var_output(resultant_config)}" }
 
       resultant_config
@@ -328,13 +350,15 @@ module ChefAutoAccumulator
       log_chef(:info) { "Creating config template resource for #{new_resource.config_file}" }
 
       config_content = if new_resource.load_existing_config_file
-                         existing_config_load = load_config_file(new_resource.config_file, false) || {}
+                         existing_config_load = config_file_current_data || {}
                          log_chef(:debug) { "Existing config load data: #{debug_var_output(existing_config_load)}" }
 
                          existing_config_load
                        else
                          {}
                        end
+
+                       template_file_type = config_file_type
 
       with_run_context(:root) do
         FILE_SUPPORTING_GEMS.each { |gem| declare_resource(:chef_gem, gem) { compile_time true } unless gem_installed?(gem) }
@@ -398,17 +422,18 @@ module ChefAutoAccumulator
     # Initialise and return a containing path object, for when a configuration item is contained within another
     #
     # @param action [Symbol] Action to perform
+    # @param path [String, Symbol, Array<String>, Array<Symbol>] The path to initialise
+    # @param containing_key [String, Symbol] The containing key for the child object
     # @param filter_key [String, Symbol] The Hash key to filter on
     # @param filter_value [any] The value to filter against
-    # @param path [String, Symbol, Array<String>, Array<Symbol>] The path to initialise
     # @return [Hash] The initialised Hash object
     #
     def accumulator_config_containing_path_init(
       action:,
-      filter_key: option_config_path_match_key,
-      filter_value: option_config_path_match_value,
+      path:,
       containing_key: option_config_path_contained_key,
-      path:
+      filter_key: option_config_path_match_key,
+      filter_value: option_config_path_match_value
     )
       raise ArgumentError, "Path must be specified as Array, got #{debug_var_output(path)}" unless path.is_a?(Array)
 
@@ -422,37 +447,45 @@ module ChefAutoAccumulator
         return parent_path
       end
 
-      if accumulator_config_path_contained_nested?
-        filter_tuple = filter_key.zip(filter_value, containing_key.slice(0...-1))
-        log_chef(:debug) { "Zipped search tuples\n#{debug_var_output(filter_tuple)}" }
+      contained_path = if accumulator_config_path_contained_nested?
+                         filter_tuple = filter_key.zip(filter_value, containing_key.slice(0...-1))
+                         log_chef(:debug) { "Zipped search tuples\n#{debug_var_output(filter_tuple)}" }
 
-        # Set the initial search path
-        search_object = parent_path
+                         # Set the initial search path
+                         search_object = parent_path
 
-        while (k, v, ck = filter_tuple.shift)
-          search_path_log = "Searching path #{debug_var_output(search_object)} for Key: #{debug_var_output(k)} | Value: #{debug_var_output(v)}"
-          search_path_log.concat(" | Containing Key: #{debug_var_output(ck)}") if ck
-          log_chef(:info) { search_path_log }
+                         while (k, v, ck = filter_tuple.shift)
+                           search_path_log = "Searching path #{debug_var_output(search_object)} for Key: #{debug_var_output(k)} | Value: #{debug_var_output(v)}"
+                           search_path_log.concat(" | Containing Key: #{debug_var_output(ck)}") if ck
+                           log_chef(:info) { search_path_log }
 
-          break if search_object.nil?
+                           break if search_object.nil?
 
-          # Filter the containing Array objects
-          search_object = accumulator_config_path_filter(search_object, k, v)
-          if search_object.nil?
-            log_chef(:info) { "Got a nil search object for #{debug_var_output(k)} | #{debug_var_output(v)}, breaking" }
-            break
-          end
+                           # Filter the containing Array objects
+                           search_object = accumulator_config_path_filter(search_object, k, v)
+                           if search_object.nil?
+                             log_chef(:info) { "Got a nil search object for #{debug_var_output(k)} | #{debug_var_output(v)}, breaking" }
+                             break
+                           end
 
-          # Fetch the containing key
-          search_object = search_object.fetch(ck) if ck && !search_object.nil?
-        end
+                           # Fetch the containing key
+                           search_object = search_object.fetch(ck) if ck && !search_object.nil?
+                         end
 
-        log_chef(:debug) { "Resultant path\n#{debug_var_output(search_object)}" }
-        search_object
-      else
-        # Find the object that matches the filter
-        accumulator_config_path_filter(parent_path, filter_key, filter_value)
+                         log_chef(:debug) { "Resultant path\n#{debug_var_output(search_object)}" }
+                         search_object
+                       else
+                         # Find the object that matches the filter
+                         accumulator_config_path_filter(parent_path, filter_key, filter_value)
+                       end
+
+      case option_config_path_type
+      when :array_contained_hash
+        contained_path[option_config_path_contained_key] ||= {}
+        contained_path = contained_path.fetch(option_config_path_contained_key)
       end
+
+      contained_path
     rescue NameError, KeyError => e
       raise AccumlatorConfigNoParentPathError.new(e, resource_declared_name, resource_type_name, k, v, ck, search_object)
     end
