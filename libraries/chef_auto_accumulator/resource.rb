@@ -255,27 +255,29 @@ module ChefAutoAccumulator
       match = option_config_match
 
       # Find the Array index for the configuration object that matches the resource definition
-      index = case option_config_path_type
-              when :array
-                log_chef(:debug) { "Testing :array for #{debug_var_output(match)}" }
+      array_path = case option_config_path_type
+                   when :array
+                     log_chef(:debug) { "Testing :array for #{debug_var_output(match)}" }
+                     accumulator_config_path_init(action, *path)
+                   when :array_contained
+                     ck = accumulator_config_path_containing_key
 
-                array_path = accumulator_config_path_init(action, *path)
-                array_path.each_with_index.select { |obj, _| match.any? { |k, v| kv_test_log(obj, k, v) } }.map(&:last)
-              when :array_contained
-                ck = accumulator_config_path_containing_key
+                     log_chef(:debug) { "Searching :array_contained #{debug_var_output(ck)} against #{debug_var_output(match)}" }
 
-                log_chef(:debug) { "Searching :array_contained #{debug_var_output(ck)} against #{debug_var_output(match)}" }
+                     array_path = accumulator_config_containing_path_init(action: action, path: path)
+                     return unless array_path
 
-                array_cpath = accumulator_config_containing_path_init(action: action, path: path)
-                return unless array_cpath
+                     # Fetch the containing key and filter for any objects that match the filter
+                     array_path = array_path.fetch(ck, [])
+                     log_chef(:debug) { "Path: #{debug_var_output(array_path)}" }
+                     array_path
+                   else
+                     raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
+                   end
 
-                # Fetch the containing key and filter for any objects that match the filter
-                array_cpath.fetch(ck, []).each_with_index.select { |obj, _| match.any? { |k, v| kv_test_log(obj, k, v) } }.map(&:last)
-              else
-                raise ArgumentError "Unknown config path type #{debug_var_output(option_config_path_type)}"
-              end
-
-      index.reverse! # We need the indexes in reverse order so we delete correctly, otherwise the shift will result in left over objects we intended to delete
+      index = config_item_index_match(array_path, match)
+      # We need the indexes in reverse order so we delete correctly, otherwise the shift will result in left over objects we intended to delete
+      index.reverse! unless nil_or_empty?(index)
       log_chef(:debug) { "Result #{debug_var_output(index)}" }
 
       index

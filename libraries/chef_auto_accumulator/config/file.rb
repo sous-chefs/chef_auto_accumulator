@@ -105,23 +105,23 @@ module ChefAutoAccumulator
                  log_chef(:debug) { "Resultant path\n#{debug_var_output(search_object)}" }
                  search_object
                else
-                 config.select { |cs| match.any? { |mk, mv| kv_test_log(cs, mk, mv) } }
+                 index = config_item_index_match(config, match)
+                 nil_or_empty?(index) ? nil : config.values_at(*index)
                end
 
         log_chef(:debug) { "Filtered items\n#{debug_var_output(item)}" }
 
         return if item.nil?
 
-        raise unless item.one? || item.empty?
-        item = item.first
+        raise "Expected one or no items to be filtered, got #{item.count}" unless item.one? || item.empty?
 
         if item
           log_chef(:info) { "#{config_file} got Match for Filter\n#{debug_var_output(match)}\n\nResult\n\n#{debug_var_output(item)}" }
         else
-          log_chef(:info) { "#{config_file} got No Match for Filter\n#{debug_var_output(match)}" }
+          log_chef(:warn) { "#{config_file} got No Match for Filter\n#{debug_var_output(match)}" }
         end
 
-        item
+        item.first
       rescue KeyError
         nil
       end
@@ -147,9 +147,9 @@ module ChefAutoAccumulator
         end
 
         match = option_config_match
-        log_chef(:trace) { "Filtering against K/V pairs #{debug_var_output(match)}" }
-
-        item = outer_key_config.filter { |object| match.any? { |k, v| kv_test_log(object, k, v) } }
+        log_chef(:debug) { "Filtering against K/V pairs #{debug_var_output(match)}" }
+        index = config_item_index_match(outer_key_config, match)
+        item = nil_or_empty?(index) ? nil : outer_key_config.values_at(*index)
 
         if nil_or_empty?(item)
           log_chef(:info) { "#{config_file} got No Match for Filter\n#{debug_var_output(match)}" }
@@ -182,6 +182,33 @@ module ChefAutoAccumulator
 
         log_chef(:debug) { debug_var_output(config) }
         !config.nil?
+      end
+
+      # Match a configuration item against multiple conditions, return the highest matching element
+      #
+      # @param config [Array] The configuration set to search
+      # @param match [Hash] The match criteria
+      # @return [Any] Matched result
+      #
+      def config_item_index_match(config, match)
+        return if nil_or_empty?(config)
+        raise FileConfigPathFilterError, 'Empty resource match filter set' if nil_or_empty?(match)
+
+        # Find the config items that match at least one of the match filters, then sort to bring the high matches to the top
+        matched_items = config.each_with_index.map { |c, i| [i, match.map { |k, v| kv_test_log(c, k, v) }.count(true)] }.filter { |_, c| c.positive? }
+        matched_items.sort_by! { |_, count| -count }
+
+        return unless matched_items.count.positive?
+
+        # Get the number of matches for the 'best' match then find out how many items matched at this level
+        best_match = matched_items.first.last
+        index = matched_items.filter { |_, c| c.eql?(best_match) }.map(&:first)
+
+        unless index.one?
+          log_chef(:warn) { "Expected either one or zero filtered configuration items, got #{index.count}. Data:\n#{debug_var_output(index)}" }
+        end
+
+        index
       end
 
       # Error to raise when failing to filter a single containing resource from a parent path
