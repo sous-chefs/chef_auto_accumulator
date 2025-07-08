@@ -229,7 +229,7 @@ module ChefAutoAccumulator
       if collection.all? { |ci| ci.is_a?(Hash) }
         raise ArgumentError "Expected array of sort_keys, got #{debug_var_output(sort_keys)}" unless sort_keys.is_a?(Array)
 
-        sort_key = sort_keys.map { |sk| translate_property_value(sk) }.filter { |sk| collection.all? { |ci| ci.key?(sk) } }.first
+        sort_key = sort_keys.map { |sk| translate_property_value(sk) }.filter { |sk| collection.all? { |ci| !ci.fetch(sk, nil).nil? } }.first
         if nil_or_empty?(sort_key)
           log_chef(:error) { "Unable to find common sort key from #{sort_keys.join(',')} for collection #{debug_var_output(collection)}" }
           return
