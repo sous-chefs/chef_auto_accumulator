@@ -5,6 +5,7 @@ This file is used to list changes made in each version of the chef_auto_accumula
 ## Unreleased
 
 - Make non-hetrogenous collection sorting more robust
+- Provide a better error when unable to find parent config path
 
 ## 0.7.0 - *2024-12-20*
 

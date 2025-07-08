@@ -108,6 +108,8 @@ module ChefAutoAccumulator
                     end
       config_key = translate_property_value(key) if key
 
+      raise AccumlatorConfigNoParentPathError, "Config path for #{path.map { |p| "['#{p}']" }.join} is nil" if config_path.nil?
+
       log_string = ''
       log_string.concat("\nPerfoming action :#{action} on configuration ")
       log_string.concat("Path: #{path.join(' -> ')}\n#{debug_var_output(config_path)}\n")
@@ -470,8 +472,6 @@ module ChefAutoAccumulator
       log_chef(:debug) { "Filtering #{debug_var_output(path, false)} on #{debug_var_output(key)} | #{debug_var_output(value)}" }
       log_chef(:trace) { "Path data\n#{debug_var_output(path)}" }
       filtered_object = path.filter { |v| v[key].eql?(value) }
-
-      return if filtered_object.empty?
 
       log_chef(:debug) { "Got filtered value #{debug_var_output(filtered_object, false)}" }
       log_chef(:trace) { "Filtered value data\n#{debug_var_output(filtered_object)}" }
