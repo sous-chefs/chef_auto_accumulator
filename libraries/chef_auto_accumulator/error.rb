@@ -29,7 +29,7 @@ module ChefAutoAccumulator
       super([
         "Failed to filter a single value for key #{debug_var_output(fkey)} and value #{debug_var_output(fvalue)}.",
         "Result: #{result.count} #{debug_var_output(result)}",
-        "Path: #{debug_var_output(path)}",
+        "Path: #{debug_var_output(path, false)}",
       ].join("\n\n"))
     end
   end
