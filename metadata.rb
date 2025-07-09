@@ -6,7 +6,7 @@ description 'Installs/Configures chef_auto_accumulator'
 source_url 'https://github.com/sous-chefs/chef_auto_accumulator'
 issues_url 'https://github.com/sous-chefs/chef_auto_accumulator/issues'
 chef_version '>= 16.0'
-version '0.7.0'
+version '0.7.1'
 
 supports 'amazon'
 supports 'centos'
