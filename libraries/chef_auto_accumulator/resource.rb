@@ -352,10 +352,10 @@ module ChefAutoAccumulator
           sensitive new_resource.sensitive
 
           variables({
-            content: config_content,
-            file_type: config_file_type,
-            sort: new_resource.sort,
-          })
+                      content: config_content,
+                      file_type: config_file_type,
+                      sort: new_resource.sort,
+                    })
 
           helpers(ChefAutoAccumulator::File)
 
@@ -498,11 +498,11 @@ module ChefAutoAccumulator
         error_msg = "Failed to find a parent containing object for #{type}[#{name}]\n"
         error_msg << case error
                      when NameError
-                       "Got NameError when Filtering object #{debug_var_output(path)} for"\
+                       "Got NameError when Filtering object #{debug_var_output(path)} for" \
                        "Key: #{debug_var_output(k)}, Value: #{debug_var_output(v)}\n"
                      when KeyError
-                       "Got KeyError when fetching Containing Key: #{debug_var_output(ck)} from object\n"\
-                       "\n#{debug_var_output(path)}\n"\
+                       "Got KeyError when fetching Containing Key: #{debug_var_output(ck)} from object\n" \
+                       "\n#{debug_var_output(path)}\n" \
                        'Does the parent containing configuration resource exist?'
                      else
                        "Unknown error #{error.class} occured"

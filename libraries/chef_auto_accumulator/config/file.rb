@@ -198,7 +198,7 @@ module ChefAutoAccumulator
         matched_items = config.each_with_index.map { |c, i| [i, match.map { |k, v| kv_test_log(c, k, v) }.count(true)] }.filter { |_, c| c.positive? }
         matched_items.sort_by! { |_, count| -count }
 
-        return unless matched_items.count.positive?
+        return unless matched_items.any?
 
         # Get the number of matches for the 'best' match then find out how many items matched at this level
         best_match = matched_items.first.last
