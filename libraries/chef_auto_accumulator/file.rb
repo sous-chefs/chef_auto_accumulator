@@ -25,11 +25,17 @@ require_relative 'file/json'
 require_relative 'file/toml'
 require_relative 'file/yaml'
 
+require_relative 'resource/options'
+
 module ChefAutoAccumulator
   # On disk configuration file properties and access
   module File
     extend ChefAutoAccumulator::Utils
     include ChefAutoAccumulator::Utils
+
+    include ChefAutoAccumulator::Resource::Options
+
+    private
 
     # Supported file types
     SUPPORTED_TYPES = %i(INI JSON JSONC TOML YAML).freeze
@@ -39,6 +45,17 @@ module ChefAutoAccumulator
       v = args.last
       v.delete_if(&ENUM_DEEP_CLEAN) if v.respond_to?(:delete_if)
       nil_or_empty?(v) && !v.is_a?(String)
+    end
+
+    # Get the specified file from the resource options
+    #
+    # @return [Symbol] The configured file
+    #
+    def config_file
+      file = option_config_file
+      log_chef(:debug) { "Config file '#{file}'" }
+
+      file
     end
 
     # Get the specified file type from the resource options
