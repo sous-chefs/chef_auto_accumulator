@@ -19,50 +19,56 @@
 
 require_relative '../_utils'
 require_relative '../file'
+require_relative '../config'
+require_relative '../resource'
+
+require_relative '../resource/property'
+require_relative '../resource/property_translation'
 
 module ChefAutoAccumulator
   module Config
+
     # On disk configuration state access, required for load_current_value support
-    module File
-      private
+    class File
+      include ChefAutoAccumulator::File
+      include Config
+      include Resource
 
-      # Load the on disk configuration file
-      #
-      # @param config_file [String] The configuration file to load
-      # @return [Hash] Configuration file contents
-      #
-      def load_config_file(config_file, cache = true)
-        return unless ::File.exist?(config_file)
+      include ChefAutoAccumulator::Resource::Property
+      include ChefAutoAccumulator::Resource::PropertyTranslation
 
-        node.run_state['caa'] ||= {}
-        node.run_state['caa']['load_config_file'] ||= {}
+      attr_reader :contents, :file, :filetype
+      attr_accessor :new_resource
 
-        if node.run_state['caa']['load_config_file'].key?(config_file) && cache
-          log_chef(:debug) { "Returning #{config_file} from cache" }
-          log_chef(:trace) { "File #{config_file} data\n#{debug_var_output(node.run_state['caa']['load_config_file'][config_file])}" }
-          return node.run_state['caa']['load_config_file'][config_file]
-        end
+      def initialize(filetype: config_file_type, file: config_file, new_resource:)
+        raise FileError, "Configuration file #{file} does not exist" unless ::File.exist?(file)
 
-        node.run_state['caa']['load_config_file'][config_file] = load_file(config_file)
-        config = node.run_state['caa']['load_config_file'][config_file]
-        log_chef(:debug) { "Loading #{config_file} Count - #{config.count}" }
-        log_chef(:trace) { "Loading #{config_file}\n#{debug_var_output(config)}" }
+        @file = file
+        @filetype = filetype
+        @contents = nil
+        @new_resource = new_resource
 
-        config
+        true
       end
+
+      def load!
+        @contents = load_file(file, filetype)
+
+        !nil_or_empty?(@contents)
+      end
+
+      # private
 
       # Load a section from the on disk configuration file
       #
       # @param config_file [String] The configuration file to load
       # @return [Hash] Configuration file contents
       #
-      def load_config_file_section(config_file)
-        config = load_config_file(config_file)
-
-        return if nil_or_empty?(config)
+      def file_section
+        return if nil_or_empty?(@contents)
 
         path = resource_config_path
-        section_config = config.dig(*path)
+        section_config = @contents.dig(*path)
         log_chef(:debug) { "#{config_file} section #{path.join(' -> ')}\n#{debug_var_output(section_config, false)}" }
         log_chef(:trace) { "#{config_file} section #{path.join(' -> ')} data\n#{debug_var_output(section_config)}" }
 
@@ -74,20 +80,17 @@ module ChefAutoAccumulator
       # @param config_file [String] The configuration file to load
       # @return [Hash] Configuration item contents
       #
-      def load_config_file_section_item(config_file)
-        config = load_config_file_section(config_file)
-
-        return if nil_or_empty?(config)
+      def file_section_item
+        return if nil_or_empty?(file_section)
 
         match = option_config_match
-        log_chef(:debug) { "Filtering\n#{debug_var_output(match)}\n\nagainst\n\n#{debug_var_output(config, false)}" }
-        log_chef(:trace) { "Filter data\n#{debug_var_output(config)}" }
+        log_chef(:trace) { "Filter data\n#{debug_var_output(file_section)}" }
 
         item = if accumulator_config_path_contained_nested?
                  filter_tuple = option_config_path_match_key.zip(option_config_path_match_value, option_config_path_contained_key.slice(0...-1))
                  log_chef(:trace) { "Zipped pairs #{debug_var_output(filter_tuple)}" }
 
-                 search_object = config
+                 search_object = file_section
                  log_chef(:trace) { "Initial search path set to #{debug_var_output(search_object)}" }
 
                  while (k, v, ck = filter_tuple.shift)
@@ -105,7 +108,9 @@ module ChefAutoAccumulator
                  log_chef(:debug) { "Resultant path\n#{debug_var_output(search_object)}" }
                  search_object
                else
-                 index = config_item_index_match(config, match)
+                 log_chef(:debug) { "Filtering\n#{debug_var_output(match)}\n\nagainst\n\n#{debug_var_output(file_section, true)}" }
+
+                 index = config_item_index_match(file_section, match)
                  nil_or_empty?(index) ? nil : config.values_at(*index)
                end
 
@@ -116,9 +121,9 @@ module ChefAutoAccumulator
         raise "Expected one or no items to be filtered, got #{item.count}" unless item.one? || item.empty?
 
         if item
-          log_chef(:info) { "#{config_file} got Match for Filter\n#{debug_var_output(match)}\n\nResult\n\n#{debug_var_output(item)}" }
+          log_chef(:info) { "#{@file} got match for Filter\n#{debug_var_output(match)}\n\nResult\n\n#{debug_var_output(item)}" }
         else
-          log_chef(:warn) { "#{config_file} got No Match for Filter\n#{debug_var_output(match)}" }
+          log_chef(:info) { "#{@file} got no match for Filter\n#{debug_var_output(match)}" }
         end
 
         item.first
@@ -131,16 +136,14 @@ module ChefAutoAccumulator
       # @param config_file [String] The configuration file to load
       # @return [Hash] Contained configuration item contents
       #
-      def load_config_file_section_contained_item(config_file)
-        config = load_config_file_section_item(config_file)
-
-        if nil_or_empty?(config)
+      def file_section_contained_item
+        if nil_or_empty?(file_section_item)
           log_chef(:info) { 'Nil or empty config, returning' }
           return
         end
 
         ck = accumulator_config_path_containing_key
-        outer_key_config = config.fetch(ck, nil)
+        outer_key_config = file_section_item.fetch(ck, nil)
         if nil_or_empty?(outer_key_config)
           log_chef(:info) { 'Nil or empty outer_key_config, returning' }
           return
@@ -152,10 +155,10 @@ module ChefAutoAccumulator
         item = nil_or_empty?(index) ? nil : outer_key_config.values_at(*index)
 
         if nil_or_empty?(item)
-          log_chef(:info) { "#{config_file} got No Match for Filter\n#{debug_var_output(match)}" }
+          log_chef(:info) { "#{@file} got No Match for Filter\n#{debug_var_output(match)}" }
           return
         else
-          log_chef(:info) { "#{config_file} got Match for Filter\n#{debug_var_output(match)}\nResult\n#{debug_var_output(item)}" }
+          log_chef(:info) { "#{@file} got Match for Filter\n#{debug_var_output(match)}\nResult\n#{debug_var_output(item)}" }
         end
 
         log_chef(:warn) { "Expected either one or zero filtered configuration items, got #{item.count}. Data:\n#{debug_var_output(item)}" } unless item.one?
@@ -214,5 +217,8 @@ module ChefAutoAccumulator
       # Error to raise when failing to filter a single containing resource from a parent path
       class FileConfigPathFilterError < FilterError; end
     end
+
+    # Error to raise when failing to filter a single containing resource from a parent path
+    class ConfigFilePathFilterError < FilterError; end
   end
 end
