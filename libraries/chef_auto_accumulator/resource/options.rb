@@ -184,7 +184,7 @@ module ChefAutoAccumulator
         return unless gsub
         raise ResourceOptionMalformedError.new(resource_type_name, 'property_name_gsub', property_name_gsub, 'Array of 2 String') unless gsub.is_a?(Array) &&
                                                                                                                                          gsub.count.eql?(2) &&
-                                                                                                                                         gsub.all? { |v| v.is_a?(String) }
+                                                                                                                                         gsub.all?(String)
 
         gsub
       end

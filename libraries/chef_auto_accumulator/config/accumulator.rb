@@ -35,7 +35,7 @@ module ChefAutoAccumulator
       def accumulator_config_path_contained_nested?
         path_tuple = [ option_config_path_match_key, option_config_path_match_value, option_config_path_contained_key ]
 
-        unless path_tuple.any? { |v| v.is_a?(Array) }
+        unless path_tuple.any?(Array)
           log_chef(:debug) { 'Config not nested' }
           return false
         end

@@ -228,7 +228,7 @@ module ChefAutoAccumulator
     # @return nil
     #
     def accumulator_config_collection_sort(collection, sort_keys = nil)
-      if collection.all? { |ci| ci.is_a?(Hash) }
+      if collection.all?(Hash)
         raise ArgumentError "Expected array of sort_keys, got #{debug_var_output(sort_keys)}" unless sort_keys.is_a?(Array)
 
         sort_key = sort_keys.map { |sk| translate_property_value(sk) }.filter { |sk| collection.all? { |ci| !ci.fetch(sk, nil).nil? } }.first
@@ -352,10 +352,10 @@ module ChefAutoAccumulator
           sensitive new_resource.sensitive
 
           variables({
-            content: config_content,
-            file_type: config_file_type,
-            sort: new_resource.sort,
-          })
+                      content: config_content,
+                      file_type: config_file_type,
+                      sort: new_resource.sort,
+                    })
 
           helpers(ChefAutoAccumulator::File)
 
@@ -376,7 +376,7 @@ module ChefAutoAccumulator
     def accumulator_config_path_init(action, *path)
       init_config_template unless config_template_exist?
 
-      return config_file_template_content if path.all? { |p| p.is_a?(NilClass) } # Root path specified
+      return config_file_template_content if path.all?(NilClass) # Root path specified
 
       # Return path if it exists
       existing_path = config_file_template_content.dig(*path)
@@ -419,7 +419,7 @@ module ChefAutoAccumulator
       log_chef(:debug) { "Got parent path type #{debug_var_output(parent_path, false)} at #{debug_var_output(path, false)}" }
       log_chef(:trace) { "Parent path data\n#{debug_var_output(parent_path)}" }
 
-      if path.all? { |p| p.is_a?(NilClass) } # Root path specified. Do we need this here?
+      if path.all?(NilClass) # Root path specified. Do we need this here?
         log_chef(:warn) { "!!! Root path specified for path #{debug_var_output(path)}. Do we need this here?" }
         return parent_path
       end
@@ -498,11 +498,11 @@ module ChefAutoAccumulator
         error_msg = "Failed to find a parent containing object for #{type}[#{name}]\n"
         error_msg << case error
                      when NameError
-                       "Got NameError when Filtering object #{debug_var_output(path)} for"\
+                       "Got NameError when Filtering object #{debug_var_output(path)} for" \
                        "Key: #{debug_var_output(k)}, Value: #{debug_var_output(v)}\n"
                      when KeyError
-                       "Got KeyError when fetching Containing Key: #{debug_var_output(ck)} from object\n"\
-                       "\n#{debug_var_output(path)}\n"\
+                       "Got KeyError when fetching Containing Key: #{debug_var_output(ck)} from object\n" \
+                       "\n#{debug_var_output(path)}\n" \
                        'Does the parent containing configuration resource exist?'
                      else
                        "Unknown error #{error.class} occured"

@@ -18,10 +18,15 @@
 #
 
 module ChefAutoAccumulator
-  cookbook_metadata = Chef::Cookbook::Metadata.new
-  cookbook_metadata.from_file("#{__dir__.gsub('libraries/chef_auto_accumulator', '')}/metadata.rb")
+  metadata_file = File.expand_path('../../metadata.rb', __dir__)
 
-  # Library version, taken from the cookbook metadata
-  VERSION = cookbook_metadata.version.dup.freeze
+  VERSION = if File.exist?(metadata_file)
+              cookbook_metadata = Chef::Cookbook::Metadata.new
+              cookbook_metadata.from_file(metadata_file)
+              cookbook_metadata.version.dup
+            else
+              'unknown'
+            end.freeze
+
   Chef::Log.info("ChefAutoAccumulator v#{VERSION} loaded.")
 end
