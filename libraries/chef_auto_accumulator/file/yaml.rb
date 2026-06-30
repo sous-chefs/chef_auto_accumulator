@@ -34,7 +34,7 @@ module ChefAutoAccumulator
       def load_file(file)
         return unless ::File.exist?(file)
 
-        ::YAML.load(::File.read(file))
+        ::YAML.load_file(file)
       end
 
       # Create a YAML file output as a String from a Hash
