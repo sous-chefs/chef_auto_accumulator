@@ -2,6 +2,13 @@
 
 This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
 
+## [0.7.3](https://github.com/sous-chefs/chef_auto_accumulator/compare/chef_auto_accumulator-v0.7.2...chef_auto_accumulator-v0.7.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* **ci:** Update workflows to use release pipeline ([#28](https://github.com/sous-chefs/chef_auto_accumulator/issues/28)) ([c74660f](https://github.com/sous-chefs/chef_auto_accumulator/commit/c74660f93d6a9efcb4f756393e17420a60b53b0b))
+
 ## 0.7.1 - *2025-07-09*
 
 * Make non-hetrogenous collection sorting more robust
