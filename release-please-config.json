@@ -3,9 +3,11 @@
     ".": {
       "component": "chef_auto_accumulator",
       "changelog-path": "CHANGELOG.md",
-      "release-type": "simple",
+      "release-type": "ruby",
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true
+      "bump-patch-for-minor-pre-major": true,
+      "version-file": "metadata.rb",
+      "include-component-in-tag": false
     }
   },
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
