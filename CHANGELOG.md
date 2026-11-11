@@ -2,7 +2,7 @@
 
 This file is used to list changes made in each version of the chef_auto_accumulator cookbook.
 
-## [0.7.3](https://github.com/sous-chefs/chef_auto_accumulator/compare/chef_auto_accumulator-v0.7.2...chef_auto_accumulator-v0.7.3) (2026-10-19)
+## [0.7.3](https://github.com/sous-chefs/chef_auto_accumulator/compare/chef_auto_accumulator-v0.7.2...v0.7.3) (2026-10-19)
 
 ### Bug Fixes
 
